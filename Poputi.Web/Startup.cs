@@ -29,8 +29,11 @@ namespace Poputi.Web
         {
             services.AddDbContext<MainContext>(options =>
             {
+                // Можно хранить в launchSettings.json в переменных среды под именем "ConnectionStrings:DefaultConnection" для локальной машины.
                 options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection"));
             });
+            services.AddDatabaseDeveloperPageExceptionFilter();
+
             services.AddControllers();
         }
 
