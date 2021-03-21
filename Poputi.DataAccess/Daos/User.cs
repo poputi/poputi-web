@@ -13,5 +13,6 @@ namespace Poputi.DataAccess.Daos
         public string FirstMidName { get; set; }
         public string Login { get; set; }
         public ICollection<CityRoute> HostedRoutes { get; set; }
+        public City HomeCity { get; set; }
     }
 }

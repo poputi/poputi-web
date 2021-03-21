@@ -12,6 +12,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using NetTopologySuite;
+using Npgsql.NetTopologySuite;
 
 namespace Poputi.Web
 {
@@ -30,7 +32,10 @@ namespace Poputi.Web
             services.AddDbContext<MainContext>(options =>
             {
                 // ћожно хранить в launchSettings.json в переменных среды под именем "ConnectionStrings:DefaultConnection" дл€ локальной машины.
-                options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection"));
+                options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection"),
+                    // Ќадстройка дл€ работы с пространственными данными.
+                    npgsqlOptions => npgsqlOptions.UseNetTopologySuite(geographyAsDefault: true)
+                    );
             });
             services.AddDatabaseDeveloperPageExceptionFilter();
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NetTopologySuite.Geometries;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,9 +21,7 @@ namespace Poputi.DataAccess.Daos
         /// </summary>
         public User User { get; set; }
 
-        public double StartLongitude { get; set; }
-        public double StartLatitude { get; set; }
-        public double EndLongitude { get; set; }
-        public double EndLatitude { get; set; }
+        public Point Start { get; set; }
+        public Point End { get; set; }
     }
 }
