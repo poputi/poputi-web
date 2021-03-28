@@ -80,5 +80,15 @@ namespace Poputi.DataAccess.Services
         {
             _dbContext.Entry(entity).State = EntityState.Modified;
         }
+
+        public async ValueTask SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        public async ValueTask<bool> ExistsAsync<TEntity>(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default) where TEntity : class
+        {
+            return await _dbContext.Set<TEntity>().AnyAsync(predicate, cancellationToken).ConfigureAwait(false);
+        }
     }
 }

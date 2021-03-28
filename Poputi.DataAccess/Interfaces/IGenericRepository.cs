@@ -10,6 +10,7 @@ namespace Poputi.DataAccess.Interfaces
     public interface IGenericRepository
     {
         ValueTask<EntityEntry<TEntity>> Create<TEntity>(TEntity entity, CancellationToken token = default) where TEntity : class;
+        ValueTask<bool> ExistsAsync<TEntity>(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default) where TEntity : class;
         IAsyncEnumerable<TEntity> Read<TEntity>() where TEntity : class;
         IAsyncEnumerable<TEntity> Read<TEntity>(Expression<Func<TEntity, bool>> predicate) where TEntity : class;
         ValueTask<TEntity> Read<TEntity>(Guid guid) where TEntity : class;
@@ -20,6 +21,7 @@ namespace Poputi.DataAccess.Interfaces
         IAsyncEnumerable<TEntity> ReadPage<TEntity>(int count, int pageNumber) where TEntity : class;
         IAsyncEnumerable<TEntity> ReadPage<TEntity>(int count, int pageNumber, Expression<Func<TEntity, bool>> predicate) where TEntity : class;
         void Remove<TEntity>(TEntity entity) where TEntity : class;
+        ValueTask SaveChangesAsync(CancellationToken cancellationToken = default);
         void Update<TEntity>(TEntity entity);
     }
 }
