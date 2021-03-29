@@ -14,6 +14,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using NetTopologySuite;
 using Npgsql.NetTopologySuite;
+using Poputi.DataAccess.Interfaces;
+using Poputi.DataAccess.Services;
+using NetTopologySuite.IO.Converters;
 
 namespace Poputi.Web
 {
@@ -39,7 +42,19 @@ namespace Poputi.Web
             });
             services.AddDatabaseDeveloperPageExceptionFilter();
 
-            services.AddControllers();
+            services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    // Настройка конвертера геометрии.
+                    // this constructor is overloaded.  see other overloads for options.
+                    var geoJsonConverterFactory = new GeoJsonConverterFactory();
+                    options.JsonSerializerOptions.Converters.Add(geoJsonConverterFactory);
+                });
+
+            services.AddTransient<IGenericRepository, GenericRepository>();
+
+            // Сервисы работы с геометрией.
+            services.AddSingleton(new NtsGeometryServices());
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
