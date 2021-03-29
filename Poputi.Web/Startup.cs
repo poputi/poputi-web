@@ -51,7 +51,7 @@ namespace Poputi.Web
                     options.JsonSerializerOptions.Converters.Add(geoJsonConverterFactory);
                 });
 
-            services.AddTransient<IGenericRepository, GenericRepository>();
+            services.AddTransient(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
             // Сервисы работы с геометрией.
             services.AddSingleton(new NtsGeometryServices());
