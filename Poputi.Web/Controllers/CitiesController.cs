@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Poputi.Web.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/[controller][action]")]
     [ApiController]
     public class CitiesController : ControllerBase
     {
@@ -97,7 +97,7 @@ namespace Poputi.Web.Controllers
 
             return NoContent();
         }
-
+        [HttpGet]
         private ValueTask<bool> CityExists(int id)
         {
             return _repository.ExistsAsync(x => x.Id == id);

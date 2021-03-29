@@ -43,6 +43,7 @@ namespace Poputi.DataAccess.Services
                 new User { FirstMidName = "Rowen", LastName = "Sedgmond", Login = "rsedgmond7", HomeCity = cities[0] },
                 new User { FirstMidName = "Linnie", LastName = "Roffey", Login = "lroffey8", HomeCity = cities[0] },
                 new User { FirstMidName = "Danika", LastName = "Chown", Login = "dchown9", HomeCity = cities[0] },
+                new Driver {FirstMidName = "Adolf", LastName = "Gebe", Login = "kerner1", HomeCity = cities[0]}
             };
             foreach (var u in user)
             {

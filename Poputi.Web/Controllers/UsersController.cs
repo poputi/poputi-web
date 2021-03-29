@@ -7,25 +7,28 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Poputi.DataAccess.Contexts;
 using Poputi.DataAccess.Daos;
+using Poputi.Logic.Interfaces;
 
 namespace Poputi.Web.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/[controller][action]")]
     [ApiController]
     public class UsersController : ControllerBase
     {
         private readonly MainContext _context;
+        private readonly IDriverService _driverService;
 
-        public UsersController(MainContext context)
+        public UsersController(MainContext context, IDriverService driverService)
         {
             _context = context;
+            _driverService = driverService;
         }
 
         // GET: api/Users
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
-            return await _context.Users.ToListAsync();
+            return null;
         }
 
         // GET: api/Users/5
@@ -99,10 +102,17 @@ namespace Poputi.Web.Controllers
 
             return NoContent();
         }
-
+        [HttpGet]
         private bool UserExists(int id)
         {
             return _context.Users.Any(e => e.Id == id);
+        }
+        
+        [HttpPost]
+        public async Task<IActionResult> AddCar([FromQuery]int driverId, Car car)
+        {
+            await _driverService.AddCar(driverId, car);
+            return Ok();
         }
     }
 }

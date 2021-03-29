@@ -10,7 +10,7 @@ using Poputi.DataAccess.Daos;
 
 namespace Poputi.Web.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/[controller][action]")]
     [ApiController]
     public class CityRoutesController : ControllerBase
     {
@@ -25,7 +25,7 @@ namespace Poputi.Web.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CityRoute>>> GetCityRoutes()
         {
-            return await _context.CityRoutes.ToListAsync();
+            return null;
         }
 
         // GET: api/CityRoutes/5
