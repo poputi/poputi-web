@@ -3,9 +3,8 @@ using System.Threading.Tasks;
 
 namespace Poputi.Logic.Interfaces
 {
-    public interface IDriverService
+    public interface IUserService
     {
-        Task AddCar(int driverId, Car car);
-        
+        Task<User> Get(string login);
     }
 }
