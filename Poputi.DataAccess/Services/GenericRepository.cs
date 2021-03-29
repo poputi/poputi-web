@@ -12,71 +12,73 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Poputi.DataAccess.Services
 {
-    public class GenericRepository : IGenericRepository
+    public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEntity: class
     {
         private readonly MainContext _dbContext;
+        private readonly DbSet<TEntity> _dbSet;
         public GenericRepository(MainContext dbContext)
         {
             _dbContext = dbContext;
+            _dbSet = dbContext.Set<TEntity>();
         }
 
-        public ValueTask<EntityEntry<TEntity>> Create<TEntity>(TEntity entity, CancellationToken token = default) where TEntity : class
+        public ValueTask<EntityEntry<TEntity>> Create(TEntity entity, CancellationToken token = default) 
         {
             return _dbContext.AddAsync(entity, token);
         }
 
-        public IAsyncEnumerable<TEntity> Read<TEntity>(Expression<Func<TEntity, bool>> predicate) where TEntity : class
+        public IAsyncEnumerable<TEntity> Read(Expression<Func<TEntity, bool>> predicate)
         {
-            return _dbContext.Set<TEntity>().Where(predicate).AsAsyncEnumerable();
+            return _dbSet.Where(predicate).AsAsyncEnumerable();
         }
 
-        public ValueTask<TEntity> Read<TEntity>(Guid guid) where TEntity : class
+        public ValueTask<TEntity> Read (Guid guid)
         {
-            return _dbContext.Set<TEntity>().FindAsync(guid);
+            return _dbSet.FindAsync(guid);
         }
 
-        public ValueTask<TEntity> Read<TEntity>(Guid guid, CancellationToken token) where TEntity : class
+        public ValueTask<TEntity> Read (Guid guid, CancellationToken token)
         {
-            return _dbContext.Set<TEntity>().FindAsync(new object[] { guid }, token);
+            return _dbSet.FindAsync(new object[] { guid }, token);
         }
 
-        public ValueTask<TEntity> Read<TEntity>(params object[] keyValues) where TEntity : class
+        public ValueTask<TEntity> Read (params object[] keyValues)
         {
-            return _dbContext.Set<TEntity>().FindAsync(keyValues);
+            return _dbSet.FindAsync(keyValues);
         }
 
-        public ValueTask<TEntity> Read<TEntity>(object[] keyValues, CancellationToken token) where TEntity : class
+        public ValueTask<TEntity> Read (object[] keyValues, CancellationToken token)
         {
-            return _dbContext.Set<TEntity>().FindAsync(keyValues, token);
+            return _dbSet.FindAsync(keyValues, token);
         }
 
-        public IAsyncEnumerable<TEntity> Read<TEntity>(params Expression<Func<TEntity, object>>[] includeProperties) where TEntity : class
+        public IAsyncEnumerable<TEntity> Read (params Expression<Func<TEntity, object>>[] includeProperties)
         {
-            var query = _dbContext.Set<TEntity>().AsNoTracking();
+            var query = _dbSet.AsNoTracking();
             return includeProperties.Aggregate(query, (current, includeProperty) => current.Include(includeProperty)).AsAsyncEnumerable();
         }
 
-        public IAsyncEnumerable<TEntity> Read<TEntity>() where TEntity : class
+        public IAsyncEnumerable<TEntity> Read()
         {
-            return _dbContext.Set<TEntity>().AsAsyncEnumerable();
+            return _dbSet.AsAsyncEnumerable();
         }
 
-        public IAsyncEnumerable<TEntity> ReadPage<TEntity>(int count, int pageNumber) where TEntity : class
+        public IAsyncEnumerable<TEntity> ReadPage(int count, int pageNumber)
         {
-            return _dbContext.Set<TEntity>().Skip((pageNumber - 1) * count).Take(count).AsAsyncEnumerable();
+            return _dbSet.Skip((pageNumber - 1) * count).Take(count).AsAsyncEnumerable();
         }
 
-        public IAsyncEnumerable<TEntity> ReadPage<TEntity>(int count, int pageNumber, Expression<Func<TEntity, bool>> predicate) where TEntity : class
+        public IAsyncEnumerable<TEntity> ReadPage(int count, int pageNumber, Expression<Func<TEntity, bool>> predicate)
         {
-            return _dbContext.Set<TEntity>().Skip((pageNumber - 1) * count).Where(predicate).Take(count).AsAsyncEnumerable();
+            return _dbSet.Skip((pageNumber - 1) * count).Where(predicate).Take(count).AsAsyncEnumerable();
         }
 
-        public void Remove<TEntity>(TEntity entity) where TEntity : class
+        public void Remove(TEntity entity)
         {
             _dbContext.Remove(entity);
         }
 
-        public void Update<TEntity>(TEntity entity)
+        public void Update(TEntity entity)
         {
             _dbContext.Entry(entity).State = EntityState.Modified;
         }
@@ -86,9 +88,9 @@ namespace Poputi.DataAccess.Services
             await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        public async ValueTask<bool> ExistsAsync<TEntity>(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default) where TEntity : class
+        public async ValueTask<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            return await _dbContext.Set<TEntity>().AnyAsync(predicate, cancellationToken).ConfigureAwait(false);
+            return await _dbSet.AnyAsync(predicate, cancellationToken).ConfigureAwait(false);
         }
     }
 }

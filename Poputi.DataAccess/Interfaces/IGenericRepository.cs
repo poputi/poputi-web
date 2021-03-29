@@ -7,21 +7,21 @@ using System.Threading.Tasks;
 
 namespace Poputi.DataAccess.Interfaces
 {
-    public interface IGenericRepository
+    public interface IGenericRepository<TEntity> where TEntity: class
     {
-        ValueTask<EntityEntry<TEntity>> Create<TEntity>(TEntity entity, CancellationToken token = default) where TEntity : class;
-        ValueTask<bool> ExistsAsync<TEntity>(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default) where TEntity : class;
-        IAsyncEnumerable<TEntity> Read<TEntity>() where TEntity : class;
-        IAsyncEnumerable<TEntity> Read<TEntity>(Expression<Func<TEntity, bool>> predicate) where TEntity : class;
-        ValueTask<TEntity> Read<TEntity>(Guid guid) where TEntity : class;
-        ValueTask<TEntity> Read<TEntity>(Guid guid, CancellationToken token) where TEntity : class;
-        ValueTask<TEntity> Read<TEntity>(object[] keyValues, CancellationToken token) where TEntity : class;
-        IAsyncEnumerable<TEntity> Read<TEntity>(params Expression<Func<TEntity, object>>[] includeProperties) where TEntity : class;
-        ValueTask<TEntity> Read<TEntity>(params object[] keyValues) where TEntity : class;
-        IAsyncEnumerable<TEntity> ReadPage<TEntity>(int count, int pageNumber) where TEntity : class;
-        IAsyncEnumerable<TEntity> ReadPage<TEntity>(int count, int pageNumber, Expression<Func<TEntity, bool>> predicate) where TEntity : class;
-        void Remove<TEntity>(TEntity entity) where TEntity : class;
+        ValueTask<EntityEntry<TEntity>> Create(TEntity entity, CancellationToken token = default);
+        ValueTask<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
+        IAsyncEnumerable<TEntity> Read();
+        IAsyncEnumerable<TEntity> Read(Expression<Func<TEntity, bool>> predicate);
+        ValueTask<TEntity> Read(Guid guid);
+        ValueTask<TEntity> Read(Guid guid, CancellationToken token);
+        ValueTask<TEntity> Read(object[] keyValues, CancellationToken token);
+        IAsyncEnumerable<TEntity> Read(params Expression<Func<TEntity, object>>[] includeProperties);
+        ValueTask<TEntity> Read(params object[] keyValues);
+        IAsyncEnumerable<TEntity> ReadPage(int count, int pageNumber);
+        IAsyncEnumerable<TEntity> ReadPage(int count, int pageNumber, Expression<Func<TEntity, bool>> predicate);
+        void Remove(TEntity entity);
         ValueTask SaveChangesAsync(CancellationToken cancellationToken = default);
-        void Update<TEntity>(TEntity entity);
+        void Update(TEntity entity);
     }
 }
