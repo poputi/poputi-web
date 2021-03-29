@@ -15,9 +15,9 @@ namespace Poputi.Web.Controllers
     [ApiController]
     public class CitiesController : ControllerBase
     {
-        private readonly IGenericRepository _repository;
+        private readonly IGenericRepository<City> _repository;
 
-        public CitiesController(IGenericRepository repository)
+        public CitiesController(IGenericRepository<City> repository)
         {
             _repository = repository;
         }
@@ -26,14 +26,14 @@ namespace Poputi.Web.Controllers
         [HttpGet]
         public async ValueTask<ActionResult<List<City>>> GetCities(CancellationToken cancellationToken)
         {
-            return await _repository.Read<City>().ToListAsync(cancellationToken);
+            return await _repository.Read().ToListAsync(cancellationToken);
         }
 
         // GET: api/Cities/5
         [HttpGet("{id}")]
         public async ValueTask<ActionResult<City>> GetCity(int id, CancellationToken cancellationToken)
         {
-            City city = await _repository.Read<City>(new object[] { id }, token: cancellationToken);
+            City city = await _repository.Read(new object[] { id }, token: cancellationToken);
             if (city is null)
             {
                 return NotFound();
@@ -51,7 +51,7 @@ namespace Poputi.Web.Controllers
                 return BadRequest();
             }
 
-            _repository.Update<City>(city);
+            _repository.Update(city);
 
             try
             {
@@ -86,7 +86,7 @@ namespace Poputi.Web.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCity(int id, CancellationToken cancellationToken)
         {
-            var city = await _repository.Read<City>(new object[] { id }, cancellationToken);
+            var city = await _repository.Read(new object[] { id }, cancellationToken);
             if (city is null)
             {
                 return NotFound();
@@ -100,7 +100,7 @@ namespace Poputi.Web.Controllers
 
         private ValueTask<bool> CityExists(int id)
         {
-            return _repository.ExistsAsync<City>(x => x.Id == id);
+            return _repository.ExistsAsync(x => x.Id == id);
         }
     }
 }
