@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Poputi.Web.Controllers
 {
-    [Route("api/[controller][action]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class CitiesController : ControllerBase
     {

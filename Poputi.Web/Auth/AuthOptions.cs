@@ -7,7 +7,7 @@ namespace Poputi.Web.Auth
     {
         public const string ISSUER = "server";
         public const string AUDIENCE = "client";
-        const string KEY = "key23jktcolld";
+        const string KEY = "lkkjasdfklabd!sf";
         public const int LIFETIME = 60;
         public static SymmetricSecurityKey GetSymmetricSecurityKey()
         {

@@ -35,7 +35,8 @@ namespace Poputi.Web.Auth
                 {
                     var claims = new List<Claim>
                     {
-                        new Claim(ClaimsIdentity.DefaultNameClaimType, user.Login),
+                        new Claim("login", user.Login),
+                        new Claim("auId", user.Id.ToString())
                     };
                     identity = new ClaimsIdentity(claims, "Token", ClaimsIdentity.DefaultNameClaimType, ClaimsIdentity.DefaultRoleClaimType);
                 }

@@ -10,4 +10,12 @@ namespace Poputi.Web.Models
         public string Login { get; set; }
         public string Password { get; set; }
     }
+    
+    public class UserRegistrationViewModel
+    {
+        public string Login { get; set; }
+        public string Password { get; set; }
+        public string LastName { get; set; }
+        public string FirstMidName { get; set; }
+    }
 }

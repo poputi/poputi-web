@@ -10,7 +10,7 @@ using Poputi.DataAccess.Daos;
 
 namespace Poputi.Web.Controllers
 {
-    [Route("api/[controller][action]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class CityRoutesController : ControllerBase
     {

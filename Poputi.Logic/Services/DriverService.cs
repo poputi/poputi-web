@@ -21,6 +21,7 @@ namespace Poputi.Logic.Services
         }
         public async Task AddCar(int driverId, Car car)
         {
+            car.DriverId = driverId;
             await _carRepository.Create(car);
             await _carRepository.SaveChangesAsync();
         }

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace Poputi.Web.Controllers
 {
+    [Route("api/[controller]")]
     public class IdentityController : ControllerBase
     {
         private readonly IdentityGenerator _identityGenerator;

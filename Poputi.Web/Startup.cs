@@ -24,6 +24,7 @@ using System.Reflection;
 using System.IO;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Poputi.Web.Auth;
 
 namespace Poputi.Web
 {
@@ -60,6 +61,8 @@ namespace Poputi.Web
 
             services.AddTransient(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddTransient<IDriverService, DriverService>();
+            services.AddTransient<IUserService, UserService>();
+            services.AddTransient<IdentityGenerator>();
 
             // Сервисы работы с геометрией.
             services.AddSingleton(new NtsGeometryServices());
@@ -115,6 +118,7 @@ namespace Poputi.Web
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseSwagger();
