@@ -63,6 +63,7 @@ namespace Poputi.Web
             services.AddTransient<IDriverService, DriverService>();
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<IdentityGenerator>();
+            services.AddTransient<IRoutesService, RoutesService>();
 
             // Сервисы работы с геометрией.
             services.AddSingleton(new NtsGeometryServices());

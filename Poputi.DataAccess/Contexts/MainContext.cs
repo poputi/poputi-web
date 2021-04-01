@@ -20,6 +20,9 @@ namespace Poputi.DataAccess.Contexts
         {
             // Установка постгиса.
             modelBuilder.HasPostgresExtension("postgis");
+
+            // TODO: проверить что это и зачем.
+            //modelBuilder.Entity<City>().Property(p => p.Location).HasColumnType("geography (point)");
         }
     }
 }
