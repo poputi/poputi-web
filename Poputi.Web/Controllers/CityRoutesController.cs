@@ -25,7 +25,7 @@ namespace Poputi.Web.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CityRoute>>> GetCityRoutes()
         {
-            return await _context.CityRoutes.ToListAsync();
+            return await _context.CityRoutes.AsQueryable().ToListAsync();
         }
 
         // GET: api/CityRoutes/5

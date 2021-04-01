@@ -12,6 +12,7 @@ namespace Poputi.DataAccess.Contexts
         public DbSet<City> Cities { get; set; }
         public DbSet<CityRoute> CityRoutes { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<RouteMatch> RouteMatches { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

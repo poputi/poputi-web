@@ -1,4 +1,5 @@
 ﻿using NetTopologySuite.Geometries;
+using Poputi.DataAccess.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,5 +24,6 @@ namespace Poputi.DataAccess.Daos
 
         public Point Start { get; set; }
         public Point End { get; set; }
+        public CityRouteType CityRouteType { get; set; }
     }
 }
