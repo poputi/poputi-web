@@ -22,7 +22,7 @@ namespace Poputi.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> Token(UserLoginViewModel user)
         {
-            var identity = await _identityGenerator.GetIdentity(user);
+            var identity = await _identityGenerator.GetClaimsIdentityAsync(user);
             if (identity == null)
             {
                 return Unauthorized();

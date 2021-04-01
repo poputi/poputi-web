@@ -2,7 +2,6 @@
 using Poputi.Web.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -16,14 +15,15 @@ namespace Poputi.Web.Auth
 
         public IdentityGenerator(IUserService userService)
         {
-            _userService = userService;    
+            _userService = userService;
         }
+
         /// <summary>
         /// Вернет null если пользователь не авторизован
         /// </summary>
-        /// <param name="userLoginViewModel"></param>
-        /// <returns></returns>
-        public async Task<ClaimsIdentity> GetIdentity(UserLoginViewModel userLoginViewModel)
+        /// <param name="userLoginViewModel"> </param>
+        /// <returns> </returns>
+        public async Task<ClaimsIdentity> GetClaimsIdentityAsync(UserLoginViewModel userLoginViewModel)
         {
             ClaimsIdentity identity = null;
             var user = await _userService.Get(userLoginViewModel.Login);
