@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Poputi.Logic", "Poputi.Logi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Poputi.DataAccess", "Poputi.DataAccess\Poputi.DataAccess.csproj", "{6ECB0138-4445-45FC-BA78-63A80A557896}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Poputi.Web", "Poputi.Web\Poputi.Web.csproj", "{569EFC63-FC1A-4694-8724-BCBADDAC3C6E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Poputi.Web", "Poputi.Web\Poputi.Web.csproj", "{569EFC63-FC1A-4694-8724-BCBADDAC3C6E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

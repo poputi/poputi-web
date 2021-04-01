@@ -63,6 +63,7 @@ namespace Poputi.Web
             services.AddTransient<IDriverService, DriverService>();
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<IdentityGenerator>();
+            services.AddTransient<IRoutesService, RoutesService>();
 
             // Сервисы работы с геометрией.
             services.AddSingleton(new NtsGeometryServices());
@@ -95,15 +96,15 @@ namespace Poputi.Web
                 options.SaveToken = true;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidIssuer = Auth.AuthOptions.ISSUER,
-                    ValidAudience = Auth.AuthOptions.AUDIENCE,
-                    IssuerSigningKey = Auth.AuthOptions.GetSymmetricSecurityKey(),
+                    ValidIssuer = AuthOptions.ISSUER,
+                    ValidAudience = AuthOptions.AUDIENCE,
+                    IssuerSigningKey = AuthOptions.GetSymmetricSecurityKey(),
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
                     ClockSkew = TimeSpan.Zero,
                 };
             });
-                
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -11,7 +11,7 @@ namespace Poputi.DataAccess.Daos
     {
         public Guid Id { get; set; }
         public RouteMatchType RouteMatchType { get; set; }
-        public User Driver { get; set; }
+        public Driver Driver { get; set; }
         public ICollection<User> FellowTravelers { get; set; }
     }
 }

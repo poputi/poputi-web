@@ -11,6 +11,8 @@ namespace Poputi.DataAccess.Daos
     {
         public int Id { get; set; }
         public string Name { get; set; }
+        // TODO: я хз что это, но можно проверить
+        //[Column(TypeName = "geography (point)")]
         public Point Location { get; set; }
     }
 }

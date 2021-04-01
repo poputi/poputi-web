@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Poputi.DataAccess.Contexts;
 using Poputi.DataAccess.Daos;
+using Poputi.Logic.Interfaces;
 
 namespace Poputi.Web.Controllers
 {
@@ -15,10 +17,12 @@ namespace Poputi.Web.Controllers
     public class CityRoutesController : ControllerBase
     {
         private readonly MainContext _context;
+        private readonly IRoutesService _routesService;
 
-        public CityRoutesController(MainContext context)
+        public CityRoutesController(MainContext context, IRoutesService routesService)
         {
             _context = context;
+            _routesService = routesService;
         }
 
         // GET: api/CityRoutes
@@ -76,12 +80,16 @@ namespace Poputi.Web.Controllers
         // POST: api/CityRoutes
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<CityRoute>> PostCityRoute(CityRoute cityRoute)
+        public async ValueTask<ActionResult<CityRoute>> PostCityRoute(CityRoute cityRoute, CancellationToken cancellationToken)
         {
-            _context.CityRoutes.Add(cityRoute);
-            await _context.SaveChangesAsync();
-
+            await _routesService.AddDriverRouteAsync(cityRoute, cancellationToken);
             return CreatedAtAction("GetCityRoute", new { id = cityRoute.Id }, cityRoute);
+        }
+
+        [HttpPost("{distance}")]
+        public async ValueTask<ActionResult<List<CityRoute>>> GetCityRoutes(CityRoute cityRoute, double distance, CancellationToken cancellationToken)
+        {
+            return await _routesService.FindRoutesWithinAsync(cityRoute, distance).ToListAsync(cancellationToken);
         }
 
         // DELETE: api/CityRoutes/5
