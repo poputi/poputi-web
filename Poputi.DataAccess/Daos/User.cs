@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace Poputi.DataAccess.Daos
 {
@@ -12,6 +8,7 @@ namespace Poputi.DataAccess.Daos
         public string LastName { get; set; }
         public string FirstMidName { get; set; }
         public string Login { get; set; }
+        public string Password { get; set; }
         public ICollection<CityRoute> HostedRoutes { get; set; }
         public City HomeCity { get; set; }
     }

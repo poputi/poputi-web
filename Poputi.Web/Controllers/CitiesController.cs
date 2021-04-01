@@ -97,7 +97,7 @@ namespace Poputi.Web.Controllers
 
             return NoContent();
         }
-
+        [HttpGet]
         private ValueTask<bool> CityExists(int id)
         {
             return _repository.ExistsAsync(x => x.Id == id);
