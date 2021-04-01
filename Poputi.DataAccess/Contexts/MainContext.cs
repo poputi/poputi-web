@@ -14,7 +14,7 @@ namespace Poputi.DataAccess.Contexts
         public DbSet<User> Users { get; set; }
         public DbSet<Car> Cars { get; set; }
         public DbSet<Car> DriverCars{get;set;}
-
+        public DbSet<RouteMatch> RouteMatches { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
