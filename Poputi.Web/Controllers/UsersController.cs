@@ -25,7 +25,7 @@ namespace Poputi.Web.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
-            return await _context.Users.ToListAsync();
+            return await _context.Users.AsQueryable().ToListAsync();
         }
 
         // GET: api/Users/5
