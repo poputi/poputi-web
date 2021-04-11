@@ -27,9 +27,16 @@ namespace Poputi.Web.Controllers
 
         // GET: api/CityRoutes
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CityRoute>>> GetCityRoutes()
+        public async Task<ActionResult<IEnumerable<CityRoute>>> GetCityRoutes(CancellationToken cancellationToken)
         {
-            return await _context.CityRoutes.AsQueryable().ToListAsync();
+            return await _context.CityRoutes.AsQueryable().ToListAsync(cancellationToken);
+        }
+
+        [HttpPost("{distance}")]
+        [ProducesResponseType(statusCode: 200)]
+        public async ValueTask<ActionResult<List<CityRoute>>> GetCityRoutes([FromBody] CityRoute cityRoute, double distance, CancellationToken cancellationToken)
+        {
+            return await _routesService.FindNotMatchedRoutesWithinAsync(cityRoute, distance).ToListAsync(cancellationToken);
         }
 
         // GET: api/CityRoutes/5
@@ -37,13 +44,7 @@ namespace Poputi.Web.Controllers
         public async Task<ActionResult<CityRoute>> GetCityRoute(int id)
         {
             var cityRoute = await _context.CityRoutes.FindAsync(id);
-
-            if (cityRoute == null)
-            {
-                return NotFound();
-            }
-
-            return cityRoute;
+            return cityRoute == null ? NotFound() : cityRoute;
         }
 
         // PUT: api/CityRoutes/5
@@ -77,13 +78,6 @@ namespace Poputi.Web.Controllers
         {
             await _routesService.AddDriverRouteAsync(cityRoute, cancellationToken);
             return CreatedAtAction("GetCityRoute", new { id = cityRoute.Id }, cityRoute);
-        }
-
-        [HttpPost("{distance}")]
-        [ProducesResponseType(statusCode:200)]
-        public async ValueTask<ActionResult<List<CityRoute>>> GetCityRoutes([FromBody] CityRoute cityRoute, double distance, CancellationToken cancellationToken)
-        {
-            return await _routesService.FindNotMatchedRoutesWithinAsync(cityRoute, distance).ToListAsync(cancellationToken);
         }
 
         // DELETE: api/CityRoutes/5

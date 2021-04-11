@@ -8,7 +8,7 @@ namespace Poputi.DataAccess.Enums
 {
     public enum RouteMatchType
     {
+        WithDriver,
         OnlyFellowTravelers,
-        WithDriver
     }
 }

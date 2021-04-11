@@ -13,5 +13,6 @@ namespace Poputi.DataAccess.Daos
         public RouteMatchType RouteMatchType { get; set; }
         public Driver Driver { get; set; }
         public ICollection<User> FellowTravelers { get; set; }
+        public CityRoute MatchedCityRoute { get; set; }
     }
 }

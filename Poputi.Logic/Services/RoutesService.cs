@@ -47,8 +47,9 @@ namespace Poputi.Logic.Services
         /// <returns> </returns>
         public IAsyncEnumerable<CityRoute> FindNotMatchedRoutesWithinAsync(CityRoute cityRoute, double distance)
         {
-            //return _mainContext.CityRoutes.AsQueryable().Where(x => x.Start.IsWithinDistance(cityRoute.Start, distance) && x.End.IsWithinDistance(cityRoute.End, distance)).ToAsyncEnumerable();
-            _mainContext.CityRoutes.AsQueryable().Where(x => x.Start.IsWithinDistance(cityRoute.Start, distance) && x.End.IsWithinDistance(cityRoute.End, distance));
+            return _mainContext.CityRoutes.AsQueryable().Where(x => x.Start.IsWithinDistance(cityRoute.Start, distance) && x.End.IsWithinDistance(cityRoute.End, distance)).ToAsyncEnumerable();
+            // TODO: Возвращать, только свободные маршруты.
+            //_mainContext.CityRoutes.AsQueryable().Where(x => x.Start.IsWithinDistance(cityRoute.Start, distance) && x.End.IsWithinDistance(cityRoute.End, distance));
         }
     }
 }

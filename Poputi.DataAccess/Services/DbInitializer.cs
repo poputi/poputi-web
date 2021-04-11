@@ -17,6 +17,7 @@ namespace Poputi.DataAccess.Services
                 return;   // DB has been seeded
             }
 
+            // Мок городов.
             var cities = new City[]
             {
                 new City { Name = "Екатеринбург", Location = new Point (60.612778, 56.835556) },
@@ -27,6 +28,7 @@ namespace Poputi.DataAccess.Services
             }
             context.SaveChanges();
 
+            // Мок пользователей.
             var user = new User[]
             {
                 new User { FirstMidName = "Zachery", LastName = "M'cowis", Login = "zmcowis0", HomeCity = cities[0] },
@@ -47,6 +49,7 @@ namespace Poputi.DataAccess.Services
             }
             context.SaveChanges();
 
+            // Мок маршрутов.
             var routes = new CityRoute[]
             {
                 new CityRoute { UserId = 1, Start = new Point(27.8428651, -22.0028763), End = new Point(-74.8745545, -10.9265815) },
