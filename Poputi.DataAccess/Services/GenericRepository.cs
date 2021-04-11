@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace Poputi.DataAccess.Services
 {
+    [Obsolete("Использовать `DbContext` напрямую")]
     public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEntity: class
     {
         private readonly MainContext _dbContext;

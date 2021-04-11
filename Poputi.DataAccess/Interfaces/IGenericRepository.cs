@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace Poputi.DataAccess.Interfaces
 {
+    [Obsolete("Использовать `DbContext` напрямую")]
     public interface IGenericRepository<TEntity> where TEntity: class
     {
         ValueTask<EntityEntry<TEntity>> Create(TEntity entity, CancellationToken token = default);
