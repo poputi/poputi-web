@@ -26,6 +26,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Poputi.Web.Auth;
 
+// ¬се контроллеры в проекте теперь помечены как ApiController.
+[assembly: ApiController]
 namespace Poputi.Web
 {
     public class Startup
