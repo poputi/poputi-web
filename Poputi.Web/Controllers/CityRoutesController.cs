@@ -62,16 +62,9 @@ namespace Poputi.Web.Controllers
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException) when (!CityRouteExists(id))
             {
-                if (!CityRouteExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return NotFound();
             }
 
             return NoContent();
@@ -87,9 +80,10 @@ namespace Poputi.Web.Controllers
         }
 
         [HttpPost("{distance}")]
-        public async ValueTask<ActionResult<List<CityRoute>>> GetCityRoutes(CityRoute cityRoute, double distance, CancellationToken cancellationToken)
+        [ProducesResponseType(statusCode:200)]
+        public async ValueTask<ActionResult<List<CityRoute>>> GetCityRoutes([FromBody] CityRoute cityRoute, double distance, CancellationToken cancellationToken)
         {
-            return await _routesService.FindRoutesWithinAsync(cityRoute, distance).ToListAsync(cancellationToken);
+            return await _routesService.FindNotMatchedRoutesWithinAsync(cityRoute, distance).ToListAsync(cancellationToken);
         }
 
         // DELETE: api/CityRoutes/5

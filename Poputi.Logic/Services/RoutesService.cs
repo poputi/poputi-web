@@ -29,8 +29,8 @@ namespace Poputi.Logic.Services
         /// </summary>
         public void Example()
         {
-            var seattle = new NetTopologySuite.Geometries.Point(-122.333056, 47.609722) { SRID = 4326 };
-            var redmond = new NetTopologySuite.Geometries.Point(-122.123889, 47.669444) { SRID = 4326 };
+            var seattle = new Point(-122.333056, 47.609722) { SRID = 4326 };
+            var redmond = new Point(-122.123889, 47.669444) { SRID = 4326 };
 
             // In order to get the distance in meters, we need to project to an appropriate
             // coordinate system. In this case, we're using SRID 2855 since it covers the geographic
@@ -45,9 +45,10 @@ namespace Poputi.Logic.Services
         /// <param name="cityRoute"> </param>
         /// <param name="distance"> Расстояние в метрах </param>
         /// <returns> </returns>
-        public IAsyncEnumerable<CityRoute> FindRoutesWithinAsync(CityRoute cityRoute, double distance)
+        public IAsyncEnumerable<CityRoute> FindNotMatchedRoutesWithinAsync(CityRoute cityRoute, double distance)
         {
-            return _mainContext.CityRoutes.AsQueryable().Where(x => x.Start.IsWithinDistance(cityRoute.Start, distance) && x.End.IsWithinDistance(cityRoute.End, distance)).ToAsyncEnumerable();
+            //return _mainContext.CityRoutes.AsQueryable().Where(x => x.Start.IsWithinDistance(cityRoute.Start, distance) && x.End.IsWithinDistance(cityRoute.End, distance)).ToAsyncEnumerable();
+            _mainContext.CityRoutes.AsQueryable().Where(x => x.Start.IsWithinDistance(cityRoute.Start, distance) && x.End.IsWithinDistance(cityRoute.End, distance));
         }
     }
 }
