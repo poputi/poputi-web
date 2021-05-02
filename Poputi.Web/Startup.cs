@@ -25,6 +25,7 @@ using System.IO;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Poputi.Web.Auth;
+using System.Text.Json.Serialization;
 
 // Все контроллеры в проекте теперь помечены как ApiController.
 [assembly: ApiController]
@@ -55,6 +56,7 @@ namespace Poputi.Web
             services.AddControllers()
                 .AddJsonOptions(options =>
                 {
+                    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
                     // Настройка конвертера геометрии.
                     // this constructor is overloaded.  see other overloads for options.
                     var geoJsonConverterFactory = new GeoJsonConverterFactory();

@@ -34,9 +34,9 @@ namespace Poputi.Web.Controllers
 
         [HttpPost("{distance}")]
         [ProducesResponseType(statusCode: 200)]
-        public async ValueTask<ActionResult<List<CityRoute>>> GetCityRoutes([FromBody] CityRoute cityRoute, double distance, CancellationToken cancellationToken)
+        public async ValueTask<ActionResult<List<CityRoute>>> GetCityRoutes([FromBody] CityRoute cityRoute, double distanceInMeters, CancellationToken cancellationToken)
         {
-            return await _routesService.FindNotMatchedRoutesWithinAsync(cityRoute, distance).ToListAsync(cancellationToken);
+            return await _routesService.FindNotMatchedRoutesWithinAsync(cityRoute, distanceInMeters).ToListAsync(cancellationToken);
         }
 
         // GET: api/CityRoutes/5

@@ -1,65 +1,126 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Poputi.DataAccess.Contexts;
-using Poputi.DataAccess.Daos;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
+using AutoMapper;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Poputi.DataAccess.Contexts;
+using Poputi.DataAccess.Daos;
+using Poputi.Web.Models;
 
 namespace Poputi.Web.Controllers
 {
     [Route("api/[controller]")]
+    [ApiController]
     public class RouteMatchesController : ControllerBase
     {
-        private readonly MainContext _mainContext;
-        private readonly ILogger<RouteMatchesController> _logger;
+        private readonly MainContext _context;
 
-        public RouteMatchesController(MainContext mainContext, ILogger<RouteMatchesController> logger)
+        private MapperConfiguration _mapper = new MapperConfiguration(cfg =>
+       {
+           cfg.CreateMap<RouteMatchModel, RouteMatch>()
+           .ForMember(x => x.FellowTravelers, y => y.MapFrom(src => src.FellowTravelers.Select(ft => new User { Id = ft })))
+           .ForMember(x => x.MatchedCityRoute, y => y.MapFrom(src => new CityRoute { Id = src.MatchedCityRoute }));
+           //cfg.CreateMap<RouteMatch, RouteMatchModel>();
+       });
+
+        public RouteMatchesController(MainContext context)
         {
-            _mainContext = mainContext;
-            _logger = logger;
+            _context = context;
         }
 
-        // Post
-        // Get
-        // Put
-        // Delete
-        [HttpPost]
-        [ProducesResponseType(201)]
-        [ProducesResponseType(400)]
-        public async ValueTask<ActionResult<RouteMatch>> PostRouteMatch(RouteMatch routeMatch, CancellationToken cancellationToken)
+        // GET: api/RouteMatches
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<RouteMatch>>> GetRouteMatches()
         {
-            if ((await _mainContext.RouteMatches.FindAsync(routeMatch.MatchedCityRoute.Id, cancellationToken)) is not null)
+            return await _context.RouteMatches.Include(x => x.MatchedCityRoute).Include(x => x.FellowTravelers).ToListAsync();
+        }
+
+        // GET: api/RouteMatches/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<RouteMatch>> GetRouteMatch(Guid id)
+        {
+            var routeMatch = await _context.RouteMatches.FindAsync(id);
+
+            if (routeMatch == null)
             {
-                return BadRequest("Маршрут уже занят");
+                return NotFound();
             }
-            var cityRoute = await _mainContext.CityRoutes.FindAsync(new object[] { routeMatch.MatchedCityRoute.Id }, cancellationToken);
-            if (cityRoute is null)
+
+            return routeMatch;
+        }
+
+        // PUT: api/RouteMatches/5
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutRouteMatch(Guid id, RouteMatch routeMatch)
+        {
+            if (id != routeMatch.Id)
             {
-                return BadRequest("Маршрута не существует");
+                return BadRequest();
             }
-            routeMatch.MatchedCityRoute = cityRoute;
-            if (cityRoute.CityRouteType == DataAccess.Enums.CityRouteType.ByDriver)
+
+            _context.Entry(routeMatch).State = EntityState.Modified;
+
+            try
             {
-                // FIXME: а пользователь правда `Driver`?
-                //routeMatch.Driver = cityRoute.User as Driver;
-                routeMatch.RouteMatchType = DataAccess.Enums.RouteMatchType.WithDriver;
-                var entry = await _mainContext.RouteMatches.AddAsync(routeMatch, cancellationToken);
-                await _mainContext.SaveChangesAsync();
-                routeMatch = entry.Entity;
-                return CreatedAtAction("GetRouteMatch", new { id = routeMatch.Id }, routeMatch);
+                await _context.SaveChangesAsync();
             }
-            //routeMatch.Driver = cityRoute.User as Driver;
-            //routeMatch.RouteMatchType = DataAccess.Enums.RouteMatchType.WithDriver;
-            //var entry = await _mainContext.RouteMatches.AddAsync(routeMatch, cancellationToken);
-            //await _mainContext.SaveChangesAsync();
-            //routeMatch = entry.Entity;
-            //return CreatedAtAction("GetRouteMatch", new { id = routeMatch.Id }, routeMatch);
-            return BadRequest();
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!RouteMatchExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return NoContent();
+        }
+
+        // POST: api/RouteMatches
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [HttpPost]
+        public async Task<ActionResult<RouteMatch>> PostRouteMatch(RouteMatchModel routeMatch)
+        {
+            var match = _mapper.CreateMapper().Map<RouteMatchModel, RouteMatch>(routeMatch);
+
+            var route = await _context.CityRoutes.FindAsync(routeMatch.MatchedCityRoute);
+            match.MatchedCityRoute = route;
+
+            var fellowTravalers = _context.Users.AsQueryable().Where(x => routeMatch.FellowTravelers.Contains(x.Id));
+            match.FellowTravelers = await fellowTravalers.ToListAsync();
+
+            _context.RouteMatches.Add(match);
+            await _context.SaveChangesAsync();
+
+            return Ok();
+        }
+
+        // DELETE: api/RouteMatches/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteRouteMatch(Guid id)
+        {
+            var routeMatch = await _context.RouteMatches.FindAsync(id);
+            if (routeMatch == null)
+            {
+                return NotFound();
+            }
+
+            _context.RouteMatches.Remove(routeMatch);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        private bool RouteMatchExists(Guid id)
+        {
+            return _context.RouteMatches.Any(e => e.Id == id);
         }
     }
 }
