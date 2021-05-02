@@ -11,6 +11,6 @@ namespace Poputi.Logic.Interfaces
     public interface IRoutesService
     {
         ValueTask AddDriverRouteAsync(CityRoute cityRoute, CancellationToken cancellationToken = default);
-        IAsyncEnumerable<CityRoute> FindRoutesWithinAsync(CityRoute cityRoute, double distance);
+        IAsyncEnumerable<CityRoute> FindNotMatchedRoutesWithinAsync(CityRoute cityRoute, double distance);
     }
 }
