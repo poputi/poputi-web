@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Poputi.TelegramBot.Middlewares
 {
@@ -48,7 +49,7 @@ namespace Poputi.TelegramBot.Middlewares
             }
             if (!_telegramContext.LoginSessions.TryGetValue(updateContext.Update.Message.From.Id, out UserLoginSession session))
             {
-                await updateContext.TelegramBotClient.SendTextMessageAsync(new ChatId(updateContext.Update.Message.Chat.Id), "Ключик есть, а ларец не поддался :(");
+                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Ключик есть, а ларец не поддался :(");
                 return;
             }
             if (session.FirstName is null)
@@ -59,10 +60,11 @@ namespace Poputi.TelegramBot.Middlewares
             if (session.LastName is null)
             {
                 await ProceedLastName(updateContext, session);
-                await CreateNewPoputiUser(updateContext, session);
+                //await CreateNewPoputiUser(updateContext, session);
                 _telegramContext.LoginSessions.TryRemove(session.TelegramId, out _);
                 _telegramContext.Users.TryAdd(session.TelegramId, new TelegramUser(session));
             }
+            await _next.InvokeAsync(updateContext);
         }
 
         private async ValueTask CreateNewPoputiUser(UpdateContext updateContext, UserLoginSession session)
@@ -78,10 +80,10 @@ namespace Poputi.TelegramBot.Middlewares
             var response = await client.PostAsync("https://localhost:5001/api/users", content);
             if (response.IsSuccessStatusCode)
             {
-                await updateContext.TelegramBotClient.SendTextMessageAsync(new ChatId(updateContext.Update.Message.Chat.Id), $"Добро пожаловать {session.FirstName} {session.LastName}");
+                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, $"Добро пожаловать {session.FirstName} {session.LastName}\nТеперь вы можете создать поездку или найти готовую.");
                 return;
             }
-            await updateContext.TelegramBotClient.SendTextMessageAsync(new ChatId(updateContext.Update.Message.Chat.Id), "Что-то пошло не так :(");
+            await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Что-то пошло не так :(");
         }
 
         private async ValueTask ProceedLastName(UpdateContext updateContext, UserLoginSession session)
@@ -93,7 +95,7 @@ namespace Poputi.TelegramBot.Middlewares
                 session.LastName = updateContext.Update.Message.Text;
                 return;
             }
-            await updateContext.TelegramBotClient.SendTextMessageAsync(new ChatId(updateContext.Update.Message.Chat.Id), "Не могу записать такое имя, попробуй немного иначе...");
+            await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Не могу записать такое имя, попробуй немного иначе...");
             await PromptForLastName(updateContext);
         }
 
@@ -107,7 +109,7 @@ namespace Poputi.TelegramBot.Middlewares
                 await PromptForLastName(updateContext);
                 return;
             }
-            await updateContext.TelegramBotClient.SendTextMessageAsync(new ChatId(updateContext.Update.Message.Chat.Id), "Не могу записать такое имя, попробуй немного иначе...");
+            await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Не могу записать такое имя, попробуй немного иначе...");
             await PromptFirstName(updateContext);
         }
 
@@ -120,12 +122,12 @@ namespace Poputi.TelegramBot.Middlewares
 
         private async ValueTask PromptFirstName(UpdateContext updateContext)
         {
-            await updateContext.TelegramBotClient.SendTextMessageAsync(new ChatId(updateContext.Update.Message.Chat.Id), "Регистрация\nВведите свое имя");
+            await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Регистрация\nВведите свое имя", replyMarkup: new ForceReplyMarkup());
         }
 
         private async ValueTask PromptForLastName(UpdateContext updateContext)
         {
-            await updateContext.TelegramBotClient.SendTextMessageAsync(new ChatId(updateContext.Update.Message.Chat.Id), "Регистрация\nВведите свою фамилию");
+            await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Регистрация\nВведите свою фамилию", replyMarkup: new ForceReplyMarkup());
         }
     }
 }
