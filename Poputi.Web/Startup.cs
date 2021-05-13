@@ -46,6 +46,7 @@ namespace Poputi.Web
             services.AddDbContext<MainContext>(options =>
             {
                 // ћожно хранить в launchSettings.json в переменных среды под именем "ConnectionStrings:DefaultConnection" дл€ локальной машины.
+                Console.WriteLine(Configuration.GetConnectionString("DefaultConnection"));
                 options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection"),
                     // Ќадстройка дл€ работы с пространственными данными.
                     npgsqlOptions => npgsqlOptions.UseNetTopologySuite(geographyAsDefault: true)
