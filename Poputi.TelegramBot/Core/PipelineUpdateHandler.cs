@@ -29,7 +29,11 @@ namespace Poputi.TelegramBot.Core
         public async Task HandleUpdate(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
             var updateContext = new UpdateContext(botClient, update, cancellationToken);
-            var login = new LoginMiddleware(_telegramContext, new NullMiddleware());
+            IMiddleware nullMiddleware = new NullMiddleware();
+            IMiddleware fellowTraveller = new FellowTravellerMiddleware(_telegramContext, nullMiddleware);
+            IMiddleware keyboard = new KeyboardMiddleware(_telegramContext, fellowTraveller);
+            IMiddleware driver = new DriverMiddleware(_telegramContext, keyboard);
+            var login = new LoginMiddleware(_telegramContext, driver);
             await login.InvokeAsync(updateContext);
         }
     }
