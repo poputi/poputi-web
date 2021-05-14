@@ -30,10 +30,10 @@ namespace Poputi.TelegramBot.Core
         {
             var updateContext = new UpdateContext(botClient, update, cancellationToken);
             IMiddleware nullMiddleware = new NullMiddleware();
-            IMiddleware keyboard = new KeyboardMiddleware(_telegramContext, nullMiddleware);
+            IMiddleware fellowTraveller = new FellowTravellerMiddleware(_telegramContext, nullMiddleware);
+            IMiddleware keyboard = new KeyboardMiddleware(_telegramContext, fellowTraveller);
             IMiddleware driver = new DriverMiddleware(_telegramContext, keyboard);
-            IMiddleware fellowTraveller = new FellowTravellerMiddleware(_telegramContext, driver);
-            var login = new LoginMiddleware(_telegramContext, fellowTraveller);
+            var login = new LoginMiddleware(_telegramContext, driver);
             await login.InvokeAsync(updateContext);
         }
     }

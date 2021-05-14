@@ -37,6 +37,10 @@ namespace Poputi.TelegramBot.Middlewares
             {
                 return;
             }
+            if(updateContext.Update.Type != UpdateType.Message)
+            {
+                return;
+            }
             if (_telegramContext.Users.ContainsKey(updateContext.Update.Message.From.Id))
             {
                 await _next.InvokeAsync(updateContext);

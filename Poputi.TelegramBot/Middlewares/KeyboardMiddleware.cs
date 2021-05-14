@@ -17,12 +17,15 @@ namespace Poputi.TelegramBot.Middlewares
 
         public async ValueTask InvokeAsync(UpdateContext updateContext)
         {
-            var keyboard = new ReplyKeyboardMarkup(new KeyboardButton[] { "Создать поездку", "Найти поездку" }, resizeKeyboard: true);
-            await updateContext.TelegramBotClient.SendTextMessageAsync(
-                chatId: updateContext.Update.Message.Chat.Id,
-                text: "Кому попути?",
-                replyMarkup: keyboard
-            );
+            if(!_telegramContext.FellowTravellerSession.ContainsKey(updateContext.Update.Message.Chat.Id))
+            {
+                var keyboard = new ReplyKeyboardMarkup(new KeyboardButton[] { "Создать поездку", "Найти поездку" }, resizeKeyboard: true);
+                await updateContext.TelegramBotClient.SendTextMessageAsync(
+                    chatId: updateContext.Update.Message.Chat.Id,
+                    text: "Кому попути?",
+                    replyMarkup: keyboard
+                );
+            }     
             await _next.InvokeAsync(updateContext);
         }
     }

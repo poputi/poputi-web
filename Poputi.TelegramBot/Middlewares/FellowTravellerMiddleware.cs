@@ -4,6 +4,7 @@ using Telegram.Bot.Types.Enums;
 using Poputi.Logic;
 using Poputi.TelegramBot.Sessions;
 using System;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Poputi.TelegramBot.Middlewares
 {
@@ -16,6 +17,7 @@ namespace Poputi.TelegramBot.Middlewares
         {
             _telegramContext = telegramContext;
             _next = next;
+            geocodingService = new YandexGeocoding();
         }
 
         public async ValueTask InvokeAsync(UpdateContext updateContext)
@@ -24,7 +26,7 @@ namespace Poputi.TelegramBot.Middlewares
             {
                 return;
             }
-            if (updateContext.Update.Type != UpdateType.Message || updateContext.Update.Message.Text != "/poezdka" && updateContext.Update.Message.Text != "Найти поездку")
+            if (updateContext.Update.Type != UpdateType.Message)
             {
                 await _next.InvokeAsync(updateContext);
                 return;
@@ -35,7 +37,7 @@ namespace Poputi.TelegramBot.Middlewares
                 var newSession = new FellowTravellerSession();
                 _telegramContext.FellowTravellerSession.AddOrUpdate(updateContext.Update.Message.From.Id, newSession, (id, session) => session);
 
-                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите стартовый адресс");
+                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите стартовый адресс", replyMarkup: new ForceReplyMarkup());
                 return;
             }
 
@@ -48,11 +50,11 @@ namespace Poputi.TelegramBot.Middlewares
             if(fellowTravellerSession.Start is null)
             {
                 var isMessage = updateContext.Update.Type == UpdateType.Message;
-                (var error, var point) = geocodingService.GetGeocode(updateContext.Update.Message.Text);
+                (var error, var point) = await geocodingService.GetGeocode(updateContext.Update.Message.Text);
                 if(isMessage && error is null)
                 {
-                    fellowTravellerSession.Start = updateContext.Update.Message.Text;
-                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите конечный адресс");
+                    fellowTravellerSession.Start = point;
+                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите конечный адресс", replyMarkup: new ForceReplyMarkup());
                     return;
                 }
                 await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, error);
@@ -62,11 +64,11 @@ namespace Poputi.TelegramBot.Middlewares
             if (fellowTravellerSession.End is null)
             {
                 var isMessage = updateContext.Update.Type == UpdateType.Message;
-                (var error, var point) = geocodingService.GetGeocode(updateContext.Update.Message.Text);
+                (var error, var point) = await geocodingService.GetGeocode(updateContext.Update.Message.Text);
                 if (isMessage && error is null)
                 {
-                    fellowTravellerSession.End = updateContext.Update.Message.Text;
-                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите дату и время" + DateTime.Now);
+                    fellowTravellerSession.End = point;
+                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите дату и время" + DateTime.Now, replyMarkup: new ForceReplyMarkup());
                     return;
                 }
 
@@ -81,7 +83,7 @@ namespace Poputi.TelegramBot.Middlewares
                 var validateError = "Время не валидно";
                 if (isMessage && isDateTimeValid)
                 {
-                    fellowTravellerSession.End = dateTime.ToString();
+                    fellowTravellerSession.DateTime = dateTime.ToString();
                     _telegramContext.FellowTravellerSession.TryRemove(updateContext.Update.Message.Chat.Id, out _);
                     //TODO: сохранить поиск поездки / вернуть список поездок на выбор
                     return;
