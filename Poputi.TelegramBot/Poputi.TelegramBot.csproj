@@ -10,4 +10,8 @@
     <PackageReference Include="Telegram.Bot.Extensions.Polling" Version="0.2.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Poputi.Logic\Poputi.Logic.csproj" />
+  </ItemGroup>
+
 </Project>
