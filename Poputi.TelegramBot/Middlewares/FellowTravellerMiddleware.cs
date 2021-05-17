@@ -41,19 +41,26 @@ namespace Poputi.TelegramBot.Middlewares
                 return;
             }
 
-            if(!_telegramContext.FellowTravellerSession.TryGetValue(updateContext.Update.Message.Chat.Id, out FellowTravellerSession fellowTravellerSession))
+            if (!_telegramContext.FellowTravellerSession.TryGetValue(updateContext.Update.Message.Chat.Id, out FellowTravellerSession fellowTravellerSession))
             {
                 await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Ключик есть, а ларец не поддался :(");
                 return;
             }
 
-            if(fellowTravellerSession.Start is null)
+            if (fellowTravellerSession.Start is null)
             {
                 var isMessage = updateContext.Update.Type == UpdateType.Message;
                 (var error, var point) = await geocodingService.GetGeocode(updateContext.Update.Message.Text);
-                if(isMessage && error is null)
+                if (isMessage && error is null)
                 {
                     fellowTravellerSession.Start = point;
+                    await updateContext.TelegramBotClient.SendVenueAsync(
+                        chatId: updateContext.Update.Message.Chat.Id,
+                        latitude: (float)point.Coordinate.Y,
+                        longitude: (float)point.Coordinate.X,
+                        title: "Стартовая точка",
+                        address: updateContext.Update.Message.Text);
+
                     await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите конечный адресс", replyMarkup: new ForceReplyMarkup());
                     return;
                 }
@@ -68,6 +75,12 @@ namespace Poputi.TelegramBot.Middlewares
                 if (isMessage && error is null)
                 {
                     fellowTravellerSession.End = point;
+                    await updateContext.TelegramBotClient.SendVenueAsync(
+                       chatId: updateContext.Update.Message.Chat.Id,
+                       latitude: (float)point.Coordinate.Y,
+                       longitude: (float)point.Coordinate.X,
+                       title: "Конечная точка",
+                       address: updateContext.Update.Message.Text);
                     await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите дату и время" + DateTime.Now, replyMarkup: new ForceReplyMarkup());
                     return;
                 }
