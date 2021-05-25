@@ -119,9 +119,9 @@ namespace Poputi.TelegramBot.Middlewares
                         var buttons = new KeyboardButton[routes.Count];
                         for (var i = 0; i < routes.Count; i++)
                         {
-                            buttons[i] = ($"Фамилия: {routes[i].User.FirstMidName}/n Имя: {routes[i].User.LastName}");
+                            buttons[i] = $"Фамилия: {routes[i].User.FirstMidName}\n Имя: {routes[i].User.LastName}";
                         }
-                        var keyboard = new ReplyKeyboardMarkup(buttons, resizeKeyboard: true, oneTimeKeyboard: true);
+                        var keyboard = new ReplyKeyboardMarkup(buttons, oneTimeKeyboard: true);
                         await updateContext.TelegramBotClient.SendTextMessageAsync(
                             chatId: updateContext.Update.Message.Chat.Id,
                             text: "Выберите водителя?",

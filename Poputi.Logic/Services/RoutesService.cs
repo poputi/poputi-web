@@ -1,4 +1,5 @@
-﻿using NetTopologySuite.Geometries;
+﻿using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 using Poputi.DataAccess.Contexts;
 using Poputi.DataAccess.Daos;
 using Poputi.Logic.Interfaces;
@@ -53,7 +54,7 @@ namespace Poputi.Logic.Services
         /// <returns> </returns>
         public IAsyncEnumerable<CityRoute> FindNotMatchedRoutesWithinAsync(CityRoute cityRoute, double distance)
         {
-            return _mainContext.CityRoutes.AsQueryable().Where(x => x.Start.IsWithinDistance(cityRoute.Start, distance) && x.End.IsWithinDistance(cityRoute.End, distance)).ToAsyncEnumerable();
+            return _mainContext.CityRoutes.Include(p => p.User).AsQueryable().Where(x => x.Start.IsWithinDistance(cityRoute.Start, distance) && x.End.IsWithinDistance(cityRoute.End, distance)).ToAsyncEnumerable();
             // TODO: Возвращать, только свободные маршруты.
             //_mainContext.CityRoutes.AsQueryable().Where(x => x.Start.IsWithinDistance(cityRoute.Start, distance) && x.End.IsWithinDistance(cityRoute.End, distance));
         }
