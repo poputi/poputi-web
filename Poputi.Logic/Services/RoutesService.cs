@@ -18,6 +18,12 @@ namespace Poputi.Logic.Services
             _mainContext = mainContext;
         }
 
+        public async ValueTask AddTravellerRouteAsync(CityRoute cityRoute, CancellationToken cancellationToken = default)
+        {
+            await _mainContext.CityRoutes.AddAsync(cityRoute, cancellationToken).ConfigureAwait(false);
+            await _mainContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         public async ValueTask AddDriverRouteAsync(CityRoute cityRoute, CancellationToken cancellationToken = default)
         {
             await _mainContext.CityRoutes.AddAsync(cityRoute, cancellationToken).ConfigureAwait(false);

@@ -16,13 +16,14 @@ namespace Poputi.TelegramBot.Middlewares
     {
         private TelegramContext _telegramContext;
         private IMiddleware _next;
-        private IGeocodingService geocodingService;
-        private IRoutesService routesService;
-        public FellowTravellerMiddleware(TelegramContext telegramContext, IMiddleware next)
+        private IGeocodingService _geocodingService;
+        private IRoutesService _routesService;
+        public FellowTravellerMiddleware(TelegramContext telegramContext, IMiddleware next, IRoutesService routesService)
         {
             _telegramContext = telegramContext;
             _next = next;
-            geocodingService = new YandexGeocoding();
+            _geocodingService = new YandexGeocoding();
+            _routesService = routesService;
         }
 
         public async ValueTask InvokeAsync(UpdateContext updateContext)
@@ -55,7 +56,7 @@ namespace Poputi.TelegramBot.Middlewares
             if (fellowTravellerSession.Start is null)
             {
                 var isMessage = updateContext.Update.Type == UpdateType.Message;
-                (var error, var point) = await geocodingService.GetGeocode(updateContext.Update.Message.Text);
+                (var error, var point) = await _geocodingService.GetGeocode(updateContext.Update.Message.Text);
                 if (isMessage && error is null)
                 {
                     fellowTravellerSession.Start = point;
@@ -76,7 +77,7 @@ namespace Poputi.TelegramBot.Middlewares
             if (fellowTravellerSession.End is null)
             {
                 var isMessage = updateContext.Update.Type == UpdateType.Message;
-                (var error, var point) = await geocodingService.GetGeocode(updateContext.Update.Message.Text);
+                (var error, var point) = await _geocodingService.GetGeocode(updateContext.Update.Message.Text);
                 if (isMessage && error is null)
                 {
                     fellowTravellerSession.End = point;
@@ -109,9 +110,10 @@ namespace Poputi.TelegramBot.Middlewares
                         End = fellowTravellerSession.End,
                         Start = fellowTravellerSession.Start,
                         DateTime = dateTime,
+                        UserId = 1,//TO DO: сконектить юзера бота и приложения 
                     };
-                    var routes = await routesService.FindNotMatchedRoutesWithinAsync(cityRoute, 500).ToListAsync();
-                    await routesService.AddTravellerRouteAsync(cityRoute);
+                    var routes = await _routesService.FindNotMatchedRoutesWithinAsync(cityRoute, 500).ToListAsync();
+                    await _routesService.AddTravellerRouteAsync(cityRoute);
                     if (routes.Count > 1)
                     {
                         var buttons = new KeyboardButton[routes.Count];
@@ -126,7 +128,6 @@ namespace Poputi.TelegramBot.Middlewares
                             replyMarkup: keyboard);
                     }
                     _telegramContext.FellowTravellerSession.TryRemove(updateContext.Update.Message.Chat.Id, out _);
-                    //TODO: сохранить поиск поездки / вернуть список поездок на выбор
                     return;
                 }
 
