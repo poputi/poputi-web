@@ -5,6 +5,10 @@ using Poputi.Logic;
 using Poputi.TelegramBot.Sessions;
 using System;
 using Telegram.Bot.Types.ReplyMarkups;
+using Poputi.Logic.Interfaces;
+using Poputi.DataAccess.Daos;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace Poputi.TelegramBot.Middlewares
 {
@@ -13,6 +17,7 @@ namespace Poputi.TelegramBot.Middlewares
         private TelegramContext _telegramContext;
         private IMiddleware _next;
         private IGeocodingService geocodingService;
+        private IRoutesService routesService;
         public FellowTravellerMiddleware(TelegramContext telegramContext, IMiddleware next)
         {
             _telegramContext = telegramContext;
@@ -97,6 +102,29 @@ namespace Poputi.TelegramBot.Middlewares
                 if (isMessage && isDateTimeValid)
                 {
                     fellowTravellerSession.DateTime = dateTime.ToString();
+
+                    var cityRoute = new CityRoute
+                    {
+                        CityRouteType = DataAccess.Enums.CityRouteType.ByFellowTraveler,
+                        End = fellowTravellerSession.End,
+                        Start = fellowTravellerSession.Start,
+                        DateTime = dateTime,
+                    };
+                    var routes = await routesService.FindNotMatchedRoutesWithinAsync(cityRoute, 500).ToListAsync();
+                    await routesService.AddTravellerRouteAsync(cityRoute);
+                    if (routes.Count > 1)
+                    {
+                        var buttons = new KeyboardButton[routes.Count];
+                        for (var i = 0; i < routes.Count; i++)
+                        {
+                            buttons[i] = ($"Фамилия: {routes[i].User.FirstMidName}/n Имя: {routes[i].User.LastName}");
+                        }
+                        var keyboard = new ReplyKeyboardMarkup(buttons, resizeKeyboard: true, oneTimeKeyboard: true);
+                        await updateContext.TelegramBotClient.SendTextMessageAsync(
+                            chatId: updateContext.Update.Message.Chat.Id,
+                            text: "Выберите водителя?",
+                            replyMarkup: keyboard);
+                    }
                     _telegramContext.FellowTravellerSession.TryRemove(updateContext.Update.Message.Chat.Id, out _);
                     //TODO: сохранить поиск поездки / вернуть список поездок на выбор
                     return;

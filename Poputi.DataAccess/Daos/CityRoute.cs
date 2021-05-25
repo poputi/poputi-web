@@ -24,6 +24,7 @@ namespace Poputi.DataAccess.Daos
 
         public Point Start { get; set; }
         public Point End { get; set; }
+        public DateTime DateTime { get; set; }
         public CityRouteType CityRouteType { get; set; }
     }
 }
