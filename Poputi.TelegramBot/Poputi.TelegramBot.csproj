@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Poputi.Logic\Poputi.Logic.csproj" />
+    <ProjectReference Include="..\Poputi.Web\Poputi.Web.csproj" />
   </ItemGroup>
 
 </Project>

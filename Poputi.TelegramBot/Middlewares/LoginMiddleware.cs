@@ -1,4 +1,5 @@
-﻿using Poputi.TelegramBot.Core;
+﻿using Poputi.Logic.Interfaces;
+using Poputi.TelegramBot.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,12 +24,14 @@ namespace Poputi.TelegramBot.Middlewares
     {
         private readonly TelegramContext _telegramContext;
         private readonly IMiddleware _next;
+        private readonly IUserService _userService;
         private static readonly Regex _nameRegex = new(@"^[a-zA-Zа-яА-Я ,.'-]+$");
 
-        public LoginMiddleware(TelegramContext telegramContext, IMiddleware next)
+        public LoginMiddleware(TelegramContext telegramContext, IMiddleware next, IUserService userService)
         {
             _telegramContext = telegramContext;
             _next = next;
+            _userService = userService;
         }
 
         public async ValueTask InvokeAsync(UpdateContext updateContext)
@@ -37,12 +40,20 @@ namespace Poputi.TelegramBot.Middlewares
             {
                 return;
             }
-            if(updateContext.Update.Type != UpdateType.Message)
+            if (updateContext.Update.Type != UpdateType.Message)
             {
                 return;
             }
-            if (_telegramContext.Users.ContainsKey(updateContext.Update.Message.From.Id))
+            if (_telegramContext.Users.Contains(updateContext.Update.Message.From.Id))
             {
+                await _next.InvokeAsync(updateContext);
+                return;
+            }
+            var user = await _userService.GetUserAsync(updateContext.Update.Message.From.Id.ToString());
+            if (user != null)
+            {
+                _telegramContext.Users.Add(updateContext.Update.Message.From.Id);
+                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, $"Привет, {user.FirstMidName}!");
                 await _next.InvokeAsync(updateContext);
                 return;
             }
@@ -64,39 +75,39 @@ namespace Poputi.TelegramBot.Middlewares
             if (session.LastName is null)
             {
                 await ProceedLastName(updateContext, session);
-                //await CreateNewPoputiUser(updateContext, session);
-                _telegramContext.LoginSessions.TryRemove(session.TelegramId, out _);
-                _telegramContext.Users.TryAdd(session.TelegramId, new TelegramUser(session));
             }
             await _next.InvokeAsync(updateContext);
         }
 
         private async ValueTask CreateNewPoputiUser(UpdateContext updateContext, UserLoginSession session)
         {
-            var client = new HttpClient();
-            var content = JsonContent.Create(new
-            {
-                login = $"telegramuser;{updateContext.Update.Message.From.Id}",
-                password = session.Password,
-                lastName = session.LastName,
-                firstMidName = session.FirstName
-            });
-            var response = await client.PostAsync("https://localhost:5001/api/users", content);
-            if (response.IsSuccessStatusCode)
-            {
-                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, $"Добро пожаловать {session.FirstName} {session.LastName}\nТеперь вы можете создать поездку или найти готовую.");
-                return;
-            }
-            await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Что-то пошло не так :(");
+            await _userService.PostUserAsync(session.FirstName, session.LastName, updateContext.Update.Message.From.Id.ToString(), password: "1");
+            //var client = new HttpClient();
+            //var content = JsonContent.Create(new
+            //{
+            //    login = updateContext.Update.Message.From.Id.ToString(),
+            //    password = "1",
+            //    lastName = session.LastName,
+            //    firstMidName = session.FirstName
+            //});
+            //var response = await client.PostAsync("https://localhost:5001/api/users", content);
+            //if (response.IsSuccessStatusCode)
+            //{
+            //    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, $"Добро пожаловать {session.FirstName} {session.LastName}\nТеперь вы можете создать поездку или найти готовую.");
+            //    return;
+            //}
+            //await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Что-то пошло не так :(");
         }
 
         private async ValueTask ProceedLastName(UpdateContext updateContext, UserLoginSession session)
         {
-            var isMessage = updateContext.Update.Type == UpdateType.Message;
             var isMatch = _nameRegex.IsMatch(updateContext.Update.Message.Text);
-            if (isMessage && isMatch)
+            if (isMatch)
             {
                 session.LastName = updateContext.Update.Message.Text;
+                await CreateNewPoputiUser(updateContext, session);
+                _telegramContext.LoginSessions.TryRemove(session.TelegramId, out _);
+                _telegramContext.Users.Add(session.TelegramId);
                 return;
             }
             await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Не могу записать такое имя, попробуй немного иначе...");
@@ -105,9 +116,8 @@ namespace Poputi.TelegramBot.Middlewares
 
         private async ValueTask ProceedFirstNameAndPromptLastName(UpdateContext updateContext, UserLoginSession session)
         {
-            var isMessage = updateContext.Update.Type == UpdateType.Message;
             var isMatch = _nameRegex.IsMatch(updateContext.Update.Message.Text);
-            if (isMessage && isMatch)
+            if (isMatch)
             {
                 session.FirstName = updateContext.Update.Message.Text;
                 await PromptForLastName(updateContext);
@@ -117,7 +127,7 @@ namespace Poputi.TelegramBot.Middlewares
             await PromptFirstName(updateContext);
         }
 
-        private async Task CreateLoginSessionAndPromptFirstName(UpdateContext updateContext)
+        private async ValueTask CreateLoginSessionAndPromptFirstName(UpdateContext updateContext)
         {
             UserLoginSession newSession = new UserLoginSession();
             _telegramContext.LoginSessions.AddOrUpdate(updateContext.Update.Message.From.Id, newSession, (id, session) => session);
