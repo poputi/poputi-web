@@ -32,12 +32,12 @@ namespace Poputi.TelegramBot.Middlewares
             {
                 return;
             }
-            if (updateContext.Update.Type != UpdateType.Message)
+            // Если нет сессии и команда не наша, то ливаем.
+            if (!_telegramContext.FellowTravellerSession.ContainsKey(updateContext.Update.Message.From.Id) && (updateContext.Update.Type != UpdateType.Message || updateContext.Update.Message.Text != "/poisk" && updateContext.Update.Message.Text != "Найти поездку"))
             {
                 await _next.InvokeAsync(updateContext);
                 return;
             }
-
             if (!_telegramContext.FellowTravellerSession.ContainsKey(updateContext.Update.Message.From.Id))
             {
                 var newSession = new FellowTravellerSession();
