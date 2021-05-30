@@ -27,12 +27,13 @@ namespace Poputi.Logic.Services
             return await _userRepository.Read(u => u.Login == login).FirstOrDefaultAsync();
         }
 
-        public async ValueTask PostUserAsync(string name, string familyName, string login, string password)
+        public async ValueTask PostUserAsync(string name, string familyName, string login, string password, string phoneNumber)
         {
             var user = new User();
             user.LastName = familyName;
             user.FirstMidName = name;
             user.Login = login;
+            user.PhoneNumber = phoneNumber;
 
             var sha256 = new SHA256Managed();
             user.Password = Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));

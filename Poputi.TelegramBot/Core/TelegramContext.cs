@@ -11,7 +11,7 @@ namespace Poputi.TelegramBot.Core
     public class TelegramContext
     {
         public ConcurrentDictionary<long, UserLoginSession> LoginSessions { get; } = new ConcurrentDictionary<long, UserLoginSession>();
-        public ConcurrentDictionary<long, FellowTravellerSession> FellowTravellerSession { get; } = new ConcurrentDictionary<long, FellowTravellerSession>();
+        public ConcurrentDictionary<long, FellowTravellerSession> FellowTravellerSessions { get; } = new ConcurrentDictionary<long, FellowTravellerSession>();
         public ConcurrentDictionary<long, FellowTravellerSession> DriverSessions { get; } = new ConcurrentDictionary<long, FellowTravellerSession>();
         public ConcurrentBag<long> Users { get; } = new ConcurrentBag<long>();
     }

@@ -14,40 +14,47 @@ namespace Poputi.TelegramBot.Middlewares
 {
     public class FellowTravellerMiddleware : IMiddleware
     {
-        private TelegramContext _telegramContext;
         private IMiddleware _next;
         private IGeocodingService _geocodingService;
         private IRoutesService _routesService;
-        public FellowTravellerMiddleware(TelegramContext telegramContext, IMiddleware next, IRoutesService routesService)
+        private readonly IUserService _userService;
+
+        public FellowTravellerMiddleware(IMiddleware next, IRoutesService routesService, IUserService userService)
         {
-            _telegramContext = telegramContext;
             _next = next;
             _geocodingService = new YandexGeocoding();
             _routesService = routesService;
+            _userService = userService;
         }
 
         public async ValueTask InvokeAsync(UpdateContext updateContext)
         {
+            var telegramContext = updateContext.TelegramContext;
             if (updateContext.CancellationToken.IsCancellationRequested)
             {
                 return;
             }
-            // Если нет сессии и команда не наша, то ливаем.
-            if (!_telegramContext.FellowTravellerSession.ContainsKey(updateContext.Update.Message.From.Id) && (updateContext.Update.Type != UpdateType.Message || updateContext.Update.Message.Text != "/poisk" && updateContext.Update.Message.Text != "Найти поездку"))
+            if (updateContext.Update.Type != UpdateType.Message)
             {
                 await _next.InvokeAsync(updateContext);
                 return;
             }
-            if (!_telegramContext.FellowTravellerSession.ContainsKey(updateContext.Update.Message.From.Id))
+            // Если нет сессии и команда не наша, то ливаем.
+            if (!telegramContext.FellowTravellerSessions.ContainsKey(updateContext.Update.Message.From.Id) && updateContext.Update.Message.Text != "/poisk" && updateContext.Update.Message.Text != "Найти поездку")
+            {
+                await _next.InvokeAsync(updateContext);
+                return;
+            }
+            if (!telegramContext.FellowTravellerSessions.ContainsKey(updateContext.Update.Message.From.Id))
             {
                 var newSession = new FellowTravellerSession();
-                _telegramContext.FellowTravellerSession.AddOrUpdate(updateContext.Update.Message.From.Id, newSession, (id, session) => session);
+                telegramContext.FellowTravellerSessions.TryAdd(updateContext.Update.Message.From.Id, newSession);
 
-                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите стартовый адресс", replyMarkup: new ForceReplyMarkup());
+                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите стартовый адрес");
                 return;
             }
 
-            if (!_telegramContext.FellowTravellerSession.TryGetValue(updateContext.Update.Message.Chat.Id, out FellowTravellerSession fellowTravellerSession))
+            if (!telegramContext.FellowTravellerSessions.TryGetValue(updateContext.Update.Message.From.Id, out FellowTravellerSession fellowTravellerSession))
             {
                 await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Ключик есть, а ларец не поддался :(");
                 return;
@@ -55,9 +62,8 @@ namespace Poputi.TelegramBot.Middlewares
 
             if (fellowTravellerSession.Start is null)
             {
-                var isMessage = updateContext.Update.Type == UpdateType.Message;
                 (var error, var point) = await _geocodingService.GetGeocode(updateContext.Update.Message.Text);
-                if (isMessage && error is null)
+                if (error is null)
                 {
                     fellowTravellerSession.Start = point;
                     await updateContext.TelegramBotClient.SendVenueAsync(
@@ -67,18 +73,19 @@ namespace Poputi.TelegramBot.Middlewares
                         title: "Стартовая точка",
                         address: updateContext.Update.Message.Text);
 
-                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите конечный адресс", replyMarkup: new ForceReplyMarkup());
-                    return;
+                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите конечный адрес");
                 }
-                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, error);
+                else
+                {
+                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Прости, не разобрал адрес, попробуй написать точнее...");
+                }
                 return;
             }
 
             if (fellowTravellerSession.End is null)
             {
-                var isMessage = updateContext.Update.Type == UpdateType.Message;
                 (var error, var point) = await _geocodingService.GetGeocode(updateContext.Update.Message.Text);
-                if (isMessage && error is null)
+                if (error is null)
                 {
                     fellowTravellerSession.End = point;
                     await updateContext.TelegramBotClient.SendVenueAsync(
@@ -87,53 +94,84 @@ namespace Poputi.TelegramBot.Middlewares
                        longitude: (float)point.Coordinate.X,
                        title: "Конечная точка",
                        address: updateContext.Update.Message.Text);
-                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите дату и время" + DateTime.Now, replyMarkup: new ForceReplyMarkup());
-                    return;
+                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите дату и время. Пример: " + DateTime.Now);
                 }
-
-                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, error);
-
+                else
+                {
+                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Прости, не разобрал адрес, попробуй написать точнее...");
+                }
+                return;
             }
-
+            var user = await _userService.GetUserAsync(updateContext.Update.Message.From.Id.ToString());
             if (fellowTravellerSession.DateTime is null)
             {
-                var isMessage = updateContext.Update.Type == UpdateType.Message;
-                var isDateTimeValid = DateTime.TryParse(updateContext.Update.Message.Text, out var dateTime);
-                var validateError = "Время не валидно";
-                if (isMessage && isDateTimeValid)
+                if (!DateTime.TryParse(updateContext.Update.Message.Text, out var dateTime))
                 {
-                    fellowTravellerSession.DateTime = dateTime.ToString();
-
-                    var cityRoute = new CityRoute
-                    {
-                        CityRouteType = DataAccess.Enums.CityRouteType.ByFellowTraveler,
-                        End = fellowTravellerSession.End,
-                        Start = fellowTravellerSession.Start,
-                        DateTime = dateTime,
-                        UserId = 1,//TO DO: сконектить юзера бота и приложения 
-                    };
-                    var routes = await _routesService.FindNotMatchedRoutesWithinAsync(cityRoute, 500).ToListAsync();
-                    await _routesService.AddTravellerRouteAsync(cityRoute);
-                    if (routes.Count > 1)
-                    {
-                        var buttons = new KeyboardButton[routes.Count];
-                        for (var i = 0; i < routes.Count; i++)
-                        {
-                            buttons[i] = $"Фамилия: {routes[i].User.FirstMidName}\n Имя: {routes[i].User.LastName}";
-                        }
-                        var keyboard = new ReplyKeyboardMarkup(buttons, oneTimeKeyboard: true);
-                        await updateContext.TelegramBotClient.SendTextMessageAsync(
-                            chatId: updateContext.Update.Message.Chat.Id,
-                            text: "Выберите водителя?",
-                            replyMarkup: keyboard);
-                    }
-                    _telegramContext.FellowTravellerSession.TryRemove(updateContext.Update.Message.Chat.Id, out _);
-                    return;
+                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Прости, не разобрал время, попробуй написать точнее...");
                 }
-
-                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, validateError);
+                fellowTravellerSession.DateTime = dateTime.ToString();
+                var userId = user.Id;
+                var cityRoute = new CityRoute
+                {
+                    CityRouteType = DataAccess.Enums.CityRouteType.ByFellowTraveler,
+                    End = fellowTravellerSession.End,
+                    Start = fellowTravellerSession.Start,
+                    DateTime = dateTime,
+                    UserId = userId,
+                };
+                var routes = await _routesService.FindNotMatchedRoutesWithinAsync(cityRoute, 500).ToListAsync();
+                //await _routesService.AddTravellerRouteAsync(cityRoute);
+                if (routes.Count > 0)
+                {
+                    var buttons = new KeyboardButton[routes.Count];
+                    for (var i = 0; i < routes.Count; i++)
+                    {
+                        var option = $"Фамилия: {routes[i].User.LastName}\n Имя: {routes[i].User.FirstMidName}";
+                        buttons[i] = option;
+                        fellowTravellerSession.RoutesOptions[option] = routes[i];
+                    }
+                    var keyboard = new ReplyKeyboardMarkup(buttons, oneTimeKeyboard: true);
+                    await updateContext.TelegramBotClient.SendTextMessageAsync(
+                        chatId: updateContext.Update.Message.Chat.Id,
+                        text: "Выберите водителя или /cancel",
+                        replyMarkup: keyboard);
+                    updateContext.IsResponsed = true;
+                }
+                else
+                {
+                    telegramContext.FellowTravellerSessions.TryRemove(updateContext.Update.Message.From.Id, out _);
+                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Прости, подходящих поездок пока что нет :(");
+                }
+                return;
 
             }
+
+            if (fellowTravellerSession.RoutesOptions.TryGetValue(updateContext.Update.Message.Text, out CityRoute chosenRoute))
+            {
+                await _routesService.MatchRoutesAsync(chosenRoute);
+                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Отлично! Телефон водителя:");
+                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, chosenRoute.User.PhoneNumber);
+
+                await updateContext.TelegramBotClient.SendTextMessageAsync(long.Parse(chosenRoute.User.Login), $"Найден попутчик!\n{user.FirstMidName} {user.LastName}\nТелефон:");
+                await updateContext.TelegramBotClient.SendTextMessageAsync(long.Parse(chosenRoute.User.Login), user.PhoneNumber);
+            }
+            else
+            {
+                var count = fellowTravellerSession.RoutesOptions.Count;
+                var buttons = new KeyboardButton[count];
+                for (var i = 0; i < count; i++)
+                {
+                    buttons[i] = fellowTravellerSession.RoutesOptions.ElementAt(i).Key;
+                }
+                var keyboard = new ReplyKeyboardMarkup(buttons, oneTimeKeyboard: true);
+                await updateContext.TelegramBotClient.SendTextMessageAsync(
+                    chatId: updateContext.Update.Message.Chat.Id,
+                    text: "Пожалуйста, выберите водителя из списка или /cancel",
+                    replyMarkup: keyboard);
+                updateContext.IsResponsed = true;
+                return;
+            }
+            telegramContext.FellowTravellerSessions.TryRemove(updateContext.Update.Message.From.Id, out _);
             await _next.InvokeAsync(updateContext);
         }
     }

@@ -9,5 +9,6 @@ namespace Poputi.TelegramBot.Core
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string Password { get; } = Guid.NewGuid().ToString();
+        public string PhoneNumber { get; internal set; }
     }
 }

@@ -26,6 +26,8 @@ namespace Poputi.TelegramBot.Core
         private TelegramContext _telegramContext = new TelegramContext();
         private IServiceProvider _serviceProvider;
         public UpdateType[] AllowedUpdates => (UpdateType[])Enum.GetValues(typeof(UpdateType));
+        public static TelegramBotClient Bot;
+        internal static CancellationToken CancellationToken;
 
         private static void ConfigureServices(ServiceCollection services)
         {
@@ -91,6 +93,7 @@ namespace Poputi.TelegramBot.Core
             {
                 Console.WriteLine("Произошла ошибка");
                 Console.WriteLine(exception);
+                Bot.StartReceiving(this, CancellationToken);
             });
         }
 
@@ -101,12 +104,14 @@ namespace Poputi.TelegramBot.Core
                 var routesService = scope.ServiceProvider.GetRequiredService<IRoutesService>();
                 var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
 
-                var updateContext = new UpdateContext(botClient, update, cancellationToken);
-                IMiddleware nullMiddleware = new NullMiddleware();
-                IMiddleware fellowTraveller = new FellowTravellerMiddleware(_telegramContext, nullMiddleware, routesService);
-                IMiddleware keyboard = new KeyboardMiddleware(_telegramContext, fellowTraveller);
-                IMiddleware driver = new DriverMiddleware(_telegramContext, keyboard);
-                var login = new LoginMiddleware(_telegramContext, driver, userService);
+                var updateContext = new UpdateContext(botClient, update, cancellationToken, _telegramContext);
+
+                var nullMiddleware = new NullMiddleware();
+                var keyboard = new KeyboardMiddleware(nullMiddleware);
+                var fellowTraveller = new FellowTravellerMiddleware(keyboard, routesService, userService);
+                var driver = new DriverMiddleware(fellowTraveller, routesService, userService);
+                var cancel = new CancelCommandMiddleware(driver);
+                var login = new LoginMiddleware(cancel, userService);
                 await login.InvokeAsync(updateContext);
             }
            

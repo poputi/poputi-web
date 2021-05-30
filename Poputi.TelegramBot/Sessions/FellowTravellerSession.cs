@@ -1,4 +1,5 @@
 ﻿using NetTopologySuite.Geometries;
+using Poputi.DataAccess.Daos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,5 +13,6 @@ namespace Poputi.TelegramBot.Sessions
         public Point Start { get; set; }
         public Point End { get; set; }
         public string DateTime { get; set; }
+        public Dictionary<string, CityRoute> RoutesOptions { get; } = new Dictionary<string, CityRoute>();
     }
 }

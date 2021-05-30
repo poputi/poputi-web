@@ -22,20 +22,20 @@ namespace Poputi.TelegramBot.Middlewares
     /// </summary>
     public class LoginMiddleware : IMiddleware
     {
-        private readonly TelegramContext _telegramContext;
         private readonly IMiddleware _next;
         private readonly IUserService _userService;
         private static readonly Regex _nameRegex = new(@"^[a-zA-Zа-яА-Я ,.'-]+$");
+        private TelegramContext _telegramContext;
 
-        public LoginMiddleware(TelegramContext telegramContext, IMiddleware next, IUserService userService)
+        public LoginMiddleware(IMiddleware next, IUserService userService)
         {
-            _telegramContext = telegramContext;
             _next = next;
             _userService = userService;
         }
 
         public async ValueTask InvokeAsync(UpdateContext updateContext)
         {
+            _telegramContext = updateContext.TelegramContext;
             if (updateContext.CancellationToken.IsCancellationRequested)
             {
                 return;
@@ -53,7 +53,6 @@ namespace Poputi.TelegramBot.Middlewares
             if (user != null)
             {
                 _telegramContext.Users.Add(updateContext.Update.Message.From.Id);
-                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, $"Привет, {user.FirstMidName}!");
                 await _next.InvokeAsync(updateContext);
                 return;
             }
@@ -74,14 +73,34 @@ namespace Poputi.TelegramBot.Middlewares
             }
             if (session.LastName is null)
             {
-                await ProceedLastName(updateContext, session);
+                await ProceedLastNameAndPromptPhoneNumber(updateContext, session);
+                return;
+            }
+            if (session.PhoneNumber is null)
+            {
+                await ProceedPhoneNumberAndCreateAccount(updateContext, session);
             }
             await _next.InvokeAsync(updateContext);
         }
 
+        private async ValueTask ProceedPhoneNumberAndCreateAccount(UpdateContext updateContext, UserLoginSession session)
+        {
+            session.PhoneNumber = updateContext.Update.Message.Text;
+            await CreateNewPoputiUser(updateContext, session);
+            _telegramContext.LoginSessions.TryRemove(session.TelegramId, out _);
+            _telegramContext.Users.Add(session.TelegramId);
+            var keyboard = new ReplyKeyboardMarkup(new KeyboardButton[] { "Создать поездку", "Найти поездку", "Отмена" }, resizeKeyboard: true);
+            await updateContext.TelegramBotClient.SendTextMessageAsync(
+                chatId: updateContext.Update.Message.Chat.Id,
+                text: "Навигация",
+                replyMarkup: keyboard
+            );
+            updateContext.IsResponsed = true;
+        }
+
         private async ValueTask CreateNewPoputiUser(UpdateContext updateContext, UserLoginSession session)
         {
-            await _userService.PostUserAsync(session.FirstName, session.LastName, updateContext.Update.Message.From.Id.ToString(), password: "1");
+            await _userService.PostUserAsync(session.FirstName, session.LastName, updateContext.Update.Message.From.Id.ToString(), password: "1", session.PhoneNumber);
             //var client = new HttpClient();
             //var content = JsonContent.Create(new
             //{
@@ -99,15 +118,13 @@ namespace Poputi.TelegramBot.Middlewares
             //await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Что-то пошло не так :(");
         }
 
-        private async ValueTask ProceedLastName(UpdateContext updateContext, UserLoginSession session)
+        private async ValueTask ProceedLastNameAndPromptPhoneNumber(UpdateContext updateContext, UserLoginSession session)
         {
             var isMatch = _nameRegex.IsMatch(updateContext.Update.Message.Text);
             if (isMatch)
             {
                 session.LastName = updateContext.Update.Message.Text;
-                await CreateNewPoputiUser(updateContext, session);
-                _telegramContext.LoginSessions.TryRemove(session.TelegramId, out _);
-                _telegramContext.Users.Add(session.TelegramId);
+                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Номер телефона (для удобства, проверка не стоит)");
                 return;
             }
             await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Не могу записать такое имя, попробуй немного иначе...");

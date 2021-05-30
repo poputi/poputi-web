@@ -3,6 +3,7 @@ using NetTopologySuite.Geometries;
 using Poputi.DataAccess.Contexts;
 using Poputi.DataAccess.Daos;
 using Poputi.Logic.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -52,11 +53,23 @@ namespace Poputi.Logic.Services
         /// <param name="cityRoute"> </param>
         /// <param name="distance"> Расстояние в метрах </param>
         /// <returns> </returns>
-        public IAsyncEnumerable<CityRoute> FindNotMatchedRoutesWithinAsync(CityRoute cityRoute, double distance)
+        public IAsyncEnumerable<CityRoute> FindNotMatchedRoutesWithinAsync(CityRoute cityRoute, double distance, double timeDiff = 15)
         {
-            return _mainContext.CityRoutes.Include(p => p.User).AsQueryable().Where(x => x.Start.IsWithinDistance(cityRoute.Start, distance) && x.End.IsWithinDistance(cityRoute.End, distance)).ToAsyncEnumerable();
-            // TODO: Возвращать, только свободные маршруты.
-            //_mainContext.CityRoutes.AsQueryable().Where(x => x.Start.IsWithinDistance(cityRoute.Start, distance) && x.End.IsWithinDistance(cityRoute.End, distance));
+            return _mainContext.CityRoutes.Include(p => p.User).AsQueryable().Where(x
+                => x.Start.IsWithinDistance(cityRoute.Start, distance)
+                && x.End.IsWithinDistance(cityRoute.End, distance)
+                && (x.DateTime - cityRoute.DateTime < TimeSpan.FromMinutes(timeDiff) || x.DateTime - cityRoute.DateTime >= TimeSpan.FromMinutes(timeDiff))
+                //&& x.CityRouteType == DataAccess.Enums.CityRouteType.ByDriver
+                && !x.IsMatched
+                ).ToAsyncEnumerable();
+        }
+
+        public async ValueTask MatchRoutesAsync(CityRoute cityRoute)
+        {
+            var cityRouteEntry = await _mainContext.CityRoutes.FindAsync(cityRoute.Id);
+            cityRouteEntry.IsMatched = true;
+            //await _mainContext.RouteMatches.AddAsync(new RouteMatch { RouteMatchType = DataAccess.Enums.RouteMatchType.WithDriver, MatchedCityRoute = cityRouteEntry, FellowTravelers = new[] { fellow } });
+            await _mainContext.SaveChangesAsync();
         }
     }
 }

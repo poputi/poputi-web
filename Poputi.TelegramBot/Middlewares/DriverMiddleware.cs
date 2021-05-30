@@ -1,7 +1,10 @@
-﻿using Poputi.Logic;
+﻿using Poputi.DataAccess.Daos;
+using Poputi.Logic;
+using Poputi.Logic.Interfaces;
 using Poputi.TelegramBot.Core;
 using Poputi.TelegramBot.Sessions;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -10,92 +13,118 @@ namespace Poputi.TelegramBot.Middlewares
 {
     internal class DriverMiddleware : IMiddleware
     {
-        private TelegramContext _telegramContext;
-        private IMiddleware _next;
+        private readonly IMiddleware _next;
+        private readonly IRoutesService _routesService;
+        private readonly IUserService _userService;
         private readonly YandexGeocoding _geocodingService;
 
-        public DriverMiddleware(TelegramContext telegramContext, IMiddleware next)
+        public DriverMiddleware(IMiddleware next, IRoutesService routesService, IUserService userService)
         {
-            _telegramContext = telegramContext;
             _next = next;
+            _routesService = routesService;
+            _userService = userService;
             _geocodingService = new YandexGeocoding();
         }
 
 
         public async ValueTask InvokeAsync(UpdateContext updateContext)
         {
+            var telegramContext = updateContext.TelegramContext;
             if (updateContext.CancellationToken.IsCancellationRequested)
             {
                 return;
             }
-            // Если нет сессии и команда не наша, то ливаем.
-            if (!_telegramContext.FellowTravellerSession.ContainsKey(updateContext.Update.Message.From.Id) && (updateContext.Update.Type != UpdateType.Message || updateContext.Update.Message.Text != "/poezdka" && updateContext.Update.Message.Text != "Создать поездку"))
+            if (updateContext.Update.Type != UpdateType.Message)
             {
                 await _next.InvokeAsync(updateContext);
                 return;
             }
-            if (!_telegramContext.FellowTravellerSession.ContainsKey(updateContext.Update.Message.From.Id))
+            // Если нет сессии и команда не наша, то ливаем.
+            if (!telegramContext.DriverSessions.ContainsKey(updateContext.Update.Message.From.Id) && updateContext.Update.Message.Text != "/craete" && updateContext.Update.Message.Text != "Создать поездку")
+            {
+                await _next.InvokeAsync(updateContext);
+                return;
+            }
+            if (!telegramContext.DriverSessions.ContainsKey(updateContext.Update.Message.From.Id))
             {
                 var newSession = new FellowTravellerSession();
-                _telegramContext.FellowTravellerSession.AddOrUpdate(updateContext.Update.Message.From.Id, newSession, (id, session) => session);
+                telegramContext.DriverSessions.TryAdd(updateContext.Update.Message.From.Id, newSession);
 
-                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите стартовый адресс", replyMarkup: new ForceReplyMarkup());
+                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите стартовый адрес");
                 return;
             }
 
-            if (!_telegramContext.FellowTravellerSession.TryGetValue(updateContext.Update.Message.Chat.Id, out FellowTravellerSession fellowTravellerSession))
+            if (!telegramContext.DriverSessions.TryGetValue(updateContext.Update.Message.From.Id, out FellowTravellerSession driverSession))
             {
                 await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Ключик есть, а ларец не поддался :(");
                 return;
             }
 
-            if (fellowTravellerSession.Start is null)
+            if (driverSession.Start is null)
             {
-                var isMessage = updateContext.Update.Type == UpdateType.Message;
                 (var error, var point) = await _geocodingService.GetGeocode(updateContext.Update.Message.Text);
-                if (isMessage && error is null)
+                if (error is null)
                 {
-                    fellowTravellerSession.Start = point;
-                    await updateContext.TelegramBotClient.SendLocationAsync(updateContext.Update.Message.Chat.Id, (float)point.Y, (float)point.X);
-                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите конечный адресс", replyMarkup: new ForceReplyMarkup());
-                    return;
+                    driverSession.Start = point;
+                    await updateContext.TelegramBotClient.SendVenueAsync(
+                        chatId: updateContext.Update.Message.Chat.Id,
+                        latitude: (float)point.Coordinate.Y,
+                        longitude: (float)point.Coordinate.X,
+                        title: "Стартовая точка",
+                        address: updateContext.Update.Message.Text);
+
+                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите конечный адрес");
                 }
-                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, error);
+                else
+                {
+                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Прости, не разобрал адрес, попробуй написать точнее...");
+                }
                 return;
             }
 
-            if (fellowTravellerSession.End is null)
+            if (driverSession.End is null)
             {
-                var isMessage = updateContext.Update.Type == UpdateType.Message;
                 (var error, var point) = await _geocodingService.GetGeocode(updateContext.Update.Message.Text);
-                if (isMessage && error is null)
+                if (error is null)
                 {
-                    fellowTravellerSession.End = point;
-                    await updateContext.TelegramBotClient.SendLocationAsync(updateContext.Update.Message.Chat.Id, (float)point.Y, (float)point.X);
-                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите дату и время. Пример `" + DateTime.Now + "`", replyMarkup: new ForceReplyMarkup());
-                    return;
+                    driverSession.End = point;
+                    await updateContext.TelegramBotClient.SendVenueAsync(
+                       chatId: updateContext.Update.Message.Chat.Id,
+                       latitude: (float)point.Coordinate.Y,
+                       longitude: (float)point.Coordinate.X,
+                       title: "Конечная точка",
+                       address: updateContext.Update.Message.Text);
+                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите дату и время. Пример: " + DateTime.Now);
                 }
-
-                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, error);
-
+                else
+                {
+                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Прости, не разобрал адрес, попробуй написать точнее...");
+                }
+                return;
             }
 
-            if (fellowTravellerSession.DateTime is null)
+            if (driverSession.DateTime is null)
             {
-                var isMessage = updateContext.Update.Type == UpdateType.Message;
-                var isDateTimeValid = DateTime.TryParse(updateContext.Update.Message.Text, out var dateTime);
-                var validateError = "Время не валидно";
-                if (isMessage && isDateTimeValid)
+                if (!DateTime.TryParse(updateContext.Update.Message.Text, out var dateTime))
                 {
-                    fellowTravellerSession.DateTime = dateTime.ToString();
-                    _telegramContext.FellowTravellerSession.TryRemove(updateContext.Update.Message.Chat.Id, out _);
-                    //TODO: сохранить поиск поездки / вернуть список поездок на выбор
-                    return;
+                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Прости, не разобрал время, попробуй написать точнее...");
                 }
+                driverSession.DateTime = dateTime.ToString();
+                var user = await _userService.GetUserAsync(updateContext.Update.Message.From.Id.ToString());
+                var userId = user.Id;
+                var cityRoute = new CityRoute
+                {
+                    CityRouteType = DataAccess.Enums.CityRouteType.ByDriver,
+                    End = driverSession.End,
+                    Start = driverSession.Start,
+                    DateTime = dateTime,
+                    UserId = userId,
+                };
+                await _routesService.AddDriverRouteAsync(cityRoute);
 
-                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, validateError);
-
+                await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Готово! Мы напишем, когда найдем попутчика.");
             }
+            telegramContext.DriverSessions.TryRemove(updateContext.Update.Message.From.Id, out _);
             await _next.InvokeAsync(updateContext);
         }
     }

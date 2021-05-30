@@ -26,5 +26,6 @@ namespace Poputi.DataAccess.Daos
         public Point End { get; set; }
         public DateTime DateTime { get; set; }
         public CityRouteType CityRouteType { get; set; }
+        public bool IsMatched { get; set; }
     }
 }
