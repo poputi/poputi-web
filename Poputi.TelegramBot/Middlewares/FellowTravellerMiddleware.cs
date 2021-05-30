@@ -26,12 +26,12 @@ namespace Poputi.TelegramBot.Middlewares
             {
                 return;
             }
-            if (updateContext.Update.Type != UpdateType.Message)
+            // Если нет сессии и команда не наша, то ливаем.
+            if (!_telegramContext.FellowTravellerSession.ContainsKey(updateContext.Update.Message.From.Id) && (updateContext.Update.Type != UpdateType.Message || updateContext.Update.Message.Text != "/poisk" && updateContext.Update.Message.Text != "Найти поездку"))
             {
                 await _next.InvokeAsync(updateContext);
                 return;
             }
-
             if (!_telegramContext.FellowTravellerSession.ContainsKey(updateContext.Update.Message.From.Id))
             {
                 var newSession = new FellowTravellerSession();
@@ -41,19 +41,20 @@ namespace Poputi.TelegramBot.Middlewares
                 return;
             }
 
-            if(!_telegramContext.FellowTravellerSession.TryGetValue(updateContext.Update.Message.Chat.Id, out FellowTravellerSession fellowTravellerSession))
+            if (!_telegramContext.FellowTravellerSession.TryGetValue(updateContext.Update.Message.Chat.Id, out FellowTravellerSession fellowTravellerSession))
             {
                 await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Ключик есть, а ларец не поддался :(");
                 return;
             }
 
-            if(fellowTravellerSession.Start is null)
+            if (fellowTravellerSession.Start is null)
             {
                 var isMessage = updateContext.Update.Type == UpdateType.Message;
                 (var error, var point) = await geocodingService.GetGeocode(updateContext.Update.Message.Text);
-                if(isMessage && error is null)
+                if (isMessage && error is null)
                 {
                     fellowTravellerSession.Start = point;
+                    await updateContext.TelegramBotClient.SendLocationAsync(updateContext.Update.Message.Chat.Id, (float)point.Y, (float)point.X);
                     await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите конечный адресс", replyMarkup: new ForceReplyMarkup());
                     return;
                 }
@@ -68,7 +69,8 @@ namespace Poputi.TelegramBot.Middlewares
                 if (isMessage && error is null)
                 {
                     fellowTravellerSession.End = point;
-                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите дату и время" + DateTime.Now, replyMarkup: new ForceReplyMarkup());
+                    await updateContext.TelegramBotClient.SendLocationAsync(updateContext.Update.Message.Chat.Id, (float)point.Y, (float)point.X);
+                    await updateContext.TelegramBotClient.SendTextMessageAsync(updateContext.Update.Message.Chat.Id, "Введите дату и время. Пример `" + DateTime.Now + "`", replyMarkup: new ForceReplyMarkup());
                     return;
                 }
 
